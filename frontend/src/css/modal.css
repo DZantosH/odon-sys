@@ -1,0 +1,259 @@
+
+/* ===== ESTILOS MODAL EDITAR PACIENTE TEMPORAL ===== */
+.modal-paciente-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 10001 !important;
+  padding: var(--spacing-md) !important;
+  overflow-y: auto !important;
+}
+
+.modal-paciente-container {
+  background: var(--white) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  width: 100% !important;
+  max-width: 800px !important;
+  max-height: 95vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  animation: modalSlideIn 0.3s ease-out !important;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-paciente-header {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3) !important;
+  color: var(--white) !important;
+  padding: var(--spacing-xl) !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  flex-shrink: 0 !important;
+}
+
+.modal-paciente-info h3 {
+  margin: 0 0 var(--spacing-xs) 0 !important;
+  font-size: var(--font-xl) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-xs) !important;
+}
+
+.modal-paciente-subtitulo {
+  margin: 0 !important;
+  font-size: var(--font-sm) !important;
+  opacity: 0.9 !important;
+  font-weight: 400 !important;
+}
+
+.modal-paciente-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  color: var(--white) !important;
+  font-size: 20px !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  font-weight: bold !important;
+}
+
+.modal-paciente-close-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1) !important;
+}
+
+.modal-paciente-close-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.modal-paciente-content {
+  padding: var(--spacing-xl) !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+}
+
+.modal-paciente-error {
+  background: #fee2e2 !important;
+  border: 1px solid #fecaca !important;
+  color: #991b1b !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: var(--font-sm) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-xs) !important;
+}
+
+.modal-paciente-success {
+  background: #d1fae5 !important;
+  border: 1px solid #a7f3d0 !important;
+  color: #065f46 !important;
+  padding: var(--spacing-md) !important;
+  border-radius: var(--radius-md) !important;
+  margin-bottom: var(--spacing-lg) !important;
+  font-size: var(--font-sm) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-xs) !important;
+}
+
+.modal-paciente-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-lg) !important;
+}
+
+.modal-checkbox-label {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: var(--spacing-sm) !important;
+  cursor: pointer !important;
+  padding: var(--spacing-md) !important;
+  background: #eff6ff !important;
+  border: 2px solid #bfdbfe !important;
+  border-radius: var(--radius-lg) !important;
+  transition: all 0.2s ease !important;
+}
+
+.modal-checkbox-label:hover {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+
+.modal-checkbox-label input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.checkbox-text {
+  font-size: var(--font-sm) !important;
+  font-weight: 500 !important;
+  color: #1e40af !important;
+  line-height: 1.4 !important;
+}
+
+.modal-seccion {
+  border: 1px solid #e5e7eb !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+}
+
+.modal-seccion-titulo {
+  background: #f9fafb !important;
+  color: #374151 !important;
+  font-size: var(--font-md) !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-xs) !important;
+}
+
+.modal-seccion .form-group {
+  margin: var(--spacing-lg) !important;
+}
+
+.modal-seccion .form-group:last-child {
+  margin-bottom: var(--spacing-lg) !important;
+}
+
+.modal-grid-2 {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: var(--spacing-lg) !important;
+  margin: var(--spacing-lg) !important;
+}
+
+.modal-grid-2 .form-group {
+  margin: 0 !important;
+}
+
+.edad-calculada {
+  display: block !important;
+  margin-top: var(--spacing-xs) !important;
+  color: var(--primary-blue) !important;
+  font-size: var(--font-xs) !important;
+  font-weight: 500 !important;
+  font-style: italic !important;
+}
+
+.modal-paciente-buttons {
+  display: flex !important;
+  gap: var(--spacing-md) !important;
+  margin-top: var(--spacing-xl) !important;
+  padding-top: var(--spacing-lg) !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+.btn-modal-cancel {
+  flex: 1 !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: var(--radius-md) !important;
+  cursor: pointer !important;
+  font-size: var(--font-sm) !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-modal-cancel:hover:not(:disabled) {
+  background: #e5e7eb !important;
+  border-color: #9ca3af !important;
+}
+
+.btn-modal-submit {
+  flex: 2 !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  background: var(--primary-blue) !important;
+  color: var(--white) !important;
+  border: none !important;
+  border-radius: var(--radius-md) !important;
+  cursor: pointer !important;
+  font-size: var(--font-sm) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-modal-submit:hover:not(:disabled) {
+  background: var(--primary-blue-dark) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-modal-submit:disabled,
+.btn-modal-cancel:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
