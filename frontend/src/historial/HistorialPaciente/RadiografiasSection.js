@@ -58,9 +58,6 @@ const FormularioNuevaRadiografia = React.memo(({
                 <option value="Cefalométrica">Cefalométrica</option>
                 <option value="ATM">ATM (Articulación Temporomandibular)</option>
                 <option value="3D/CBCT">3D/CBCT</option>
-                <option value="Radiografía de Tórax">Radiografía de Tórax</option>
-                <option value="Radiografía de Columna">Radiografía de Columna</option>
-                <option value="Radiografía de Extremidades">Radiografía de Extremidades</option>
                 <option value="Otro">Otro</option>
               </select>
             </div>
@@ -205,15 +202,11 @@ const RadiografiasSection = ({
     try {
       setSubmitLoading(true);
       
-      // ✅ Ejecutar la función y capturar el resultado
       const exitoso = await onSolicitarNueva(formNuevaRadiografia);
       
-      // ✅ Solo cerrar formulario y limpiar si fue exitoso
       if (exitoso) {
         console.log('✅ Radiografía solicitada exitosamente, cerrando formulario...');
-        console.log('🔧 DEBUG: Antes de cerrar - mostrandoFormulario =', mostrandoFormulario);
         
-        // Limpiar formulario
         setFormNuevaRadiografia({
           tipo_radiografia: '',
           zona_anatomica: '',
@@ -224,19 +217,11 @@ const RadiografiasSection = ({
           instrucciones_especiales: ''
         });
         
-        // Cerrar formulario
         setMostrandoFormulario(false);
-        
-        console.log('✅ Formulario cerrado correctamente');
-        console.log('🔧 DEBUG: Después de cerrar - mostrandoFormulario debería ser false');
-      } else {
-        console.log('❌ Error en la solicitud, manteniendo formulario abierto para correcciones');
-        // El formulario se mantiene abierto para que el usuario pueda corregir el error
       }
       
     } catch (error) {
       console.error('❌ Error inesperado al solicitar radiografía:', error);
-      // En caso de error inesperado, mostrar alerta pero mantener formulario abierto
       alert(`❌ Error inesperado: ${error.message}`);
     } finally {
       setSubmitLoading(false);
@@ -244,7 +229,6 @@ const RadiografiasSection = ({
   };
 
   const handleCancelarFormulario = () => {
-    // Limpiar formulario al cancelar
     setFormNuevaRadiografia({
       tipo_radiografia: '',
       zona_anatomica: '',
@@ -265,7 +249,6 @@ const RadiografiasSection = ({
 
     try {
       console.log('📤 Subiendo imagen de radiografía...');
-      // Aquí iría la lógica para subir la imagen
       
       setModalSubirImagen(false);
       setArchivoSeleccionado(null);
@@ -278,6 +261,11 @@ const RadiografiasSection = ({
     }
   };
 
+  const handleVerDetalles = (radiografia) => {
+    setRadiografiaSeleccionada(radiografia);
+    setModalVerRadiografia(true);
+  };
+
   if (loadingRadiografias) {
     return (
       <div className="loading-section">
@@ -287,9 +275,7 @@ const RadiografiasSection = ({
     );
   }
 
-  // ✅ Si está mostrando el formulario, renderizar solo el formulario
   if (mostrandoFormulario) {
-    console.log('🔧 DEBUG: Mostrando formulario, mostrandoFormulario =', mostrandoFormulario);
     return (
       <FormularioNuevaRadiografia
         formData={formNuevaRadiografia}
@@ -301,9 +287,7 @@ const RadiografiasSection = ({
     );
   }
 
-  console.log('🔧 DEBUG: Mostrando lista de radiografías, mostrandoFormulario =', mostrandoFormulario, 'radiografias.length =', radiografias.length);
-
-  if (radiografias.length === 0) {
+  if (!radiografias || radiografias.length === 0) {
     return (
       <div className="seccion-vacia">
         <div className="icono-vacio">📸</div>
@@ -324,10 +308,7 @@ const RadiografiasSection = ({
       <div className="seccion-header">
         <h2>📸 Radiografías ({radiografias.length})</h2>
         <button 
-          onClick={() => {
-            console.log('🔧 DEBUG: Botón clickeado, cambiando mostrandoFormulario a true');
-            setMostrandoFormulario(true);
-          }}
+          onClick={() => setMostrandoFormulario(true)}
           className="btn-accion"
           style={{ backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
         >
@@ -335,93 +316,65 @@ const RadiografiasSection = ({
         </button>
       </div>
 
-      <div className="radiografias-grid">
+      {/* ===== VISTA SIMPLIFICADA ===== */}
+      <div className="radiografias-lista-simple">
         {radiografias.map((radiografia) => (
-          <div key={radiografia.id} className="radiografia-card">
-            <div className="radiografia-header">
-              <h4>{radiografia.tipo_radiografia || 'Radiografía General'}</h4>
-              <span className={`estado-badge estado-${radiografia.estado?.toLowerCase() || 'pendiente'}`}>
-                {radiografia.estado || 'Pendiente'}
-              </span>
-            </div>
-
-            <div className="radiografia-info">
-              <div className="info-item">
-                <strong>📅 Fecha Solicitud:</strong>
-                <span>{formatearFecha(radiografia.fecha_solicitud)}</span>
-              </div>
-
-              {radiografia.zona_anatomica && (
-                <div className="info-item">
-                  <strong>🦷 Zona:</strong>
-                  <span>{radiografia.zona_anatomica}</span>
-                </div>
-              )}
-
-              {radiografia.centro_radiologico && (
-                <div className="info-item">
-                  <strong>🏥 Centro:</strong>
-                  <span>{radiografia.centro_radiologico}</span>
-                </div>
-              )}
-
-              <div className="info-item">
-                <strong>⚡ Urgencia:</strong>
-                <span className={`urgencia urgencia-${radiografia.urgencia || 'normal'}`}>
-                  {radiografia.urgencia === 'emergencia' ? '🚨 Emergencia' :
-                   radiografia.urgencia === 'alta' ? '🔴 Alta' : 
-                   radiografia.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
+          <div key={radiografia.id} className="radiografia-item-simple">
+            
+            {/* INFORMACIÓN BÁSICA - SOLO LO ESENCIAL */}
+            <div className="radiografia-info-basica">
+              <div className="radiografia-nombre">
+                <h4>{radiografia.tipo_radiografia || 'Radiografía General'}</h4>
+                <span className={`estado-simple estado-${radiografia.estado?.toLowerCase() || 'pendiente'}`}>
+                  {radiografia.estado || 'PENDIENTE'}
                 </span>
               </div>
-
-              {radiografia.motivo_estudio && (
-                <div className="info-item">
-                  <strong>🔍 Motivo:</strong>
-                  <p>{radiografia.motivo_estudio}</p>
-                </div>
-              )}
-
-              {radiografia.fecha_realizacion && (
-                <div className="info-item">
-                  <strong>✅ Fecha Realización:</strong>
-                  <span>{formatearFecha(radiografia.fecha_realizacion)}</span>
-                </div>
-              )}
-
-              {radiografia.archivo_imagen && (
-                <div className="info-item">
-                  <strong>🖼️ Imagen:</strong>
-                  <button 
-                    onClick={() => window.open(buildApiUrl(radiografia.archivo_imagen), '_blank')}
-                    className="btn-ver-imagen"
-                  >
-                    🖼️ Ver Imagen
-                  </button>
-                </div>
-              )}
-            </div>
               
-              {!radiografia.archivo_imagen && (
+              <div className="radiografia-fecha">
+                <span className="fecha-label">📅 FECHA SOLICITUD:</span>
+                <span className="fecha-valor">{formatearFecha(radiografia.fecha_solicitud)}</span>
+              </div>
+            </div>
+
+            {/* BOTONES DE ACCIÓN */}
+            <div className="radiografia-acciones-simple">
+              <button 
+                onClick={() => handleVerDetalles(radiografia)}
+                className="btn-ver-detalles-simple"
+              >
+                🔍 Ver Detalles
+              </button>
+              
+              {radiografia.archivo_imagen ? (
+                <button 
+                  onClick={() => window.open(buildApiUrl(radiografia.archivo_imagen), '_blank')}
+                  className="btn-ver-imagen-simple"
+                >
+                  🖼️ Ver Imagen
+                </button>
+              ) : (
                 <button
                   onClick={() => {
                     setRadiografiaSeleccionada(radiografia);
                     setModalSubirImagen(true);
                   }}
-                  className="btn-primario"
+                  className="btn-subir-imagen-simple"
                 >
                   📤 Subir Imagen
                 </button>
               )}
+            </div>
+
           </div>
         ))}
       </div>
 
-      {/* Modal Ver Radiografía */}
+      {/* MODAL CON TODOS LOS DETALLES */}
       {modalVerRadiografia && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content modal-grande">
             <div className="modal-header">
-              <h2>👁️ Detalles de la Radiografía</h2>
+              <h2>👁️ Detalles Completos de la Radiografía</h2>
               <button 
                 onClick={() => {
                   setModalVerRadiografia(false);
@@ -432,45 +385,137 @@ const RadiografiasSection = ({
                 ✕
               </button>
             </div>
+            
             <div className="modal-body">
               {radiografiaSeleccionada && (
-                <div className="detalle-radiografia">
-                  <h3>📸 {radiografiaSeleccionada.tipo_radiografia}</h3>
-                  <div className="detalles-grid">
-                    <div className="detalle-item">
-                      <strong>📅 Fecha Solicitud:</strong>
-                      <span>{formatearFecha(radiografiaSeleccionada.fecha_solicitud)}</span>
-                    </div>
-                    {radiografiaSeleccionada.zona_anatomica && (
-                      <div className="detalle-item">
-                        <strong>🦷 Zona Anatómica:</strong>
-                        <span>{radiografiaSeleccionada.zona_anatomica}</span>
-                      </div>
-                    )}
-                    <div className="detalle-item">
-                      <strong>⚡ Urgencia:</strong>
-                      <span className={`urgencia urgencia-${radiografiaSeleccionada.urgencia || 'normal'}`}>
-                        {radiografiaSeleccionada.urgencia === 'emergencia' ? '🚨 Emergencia' :
-                         radiografiaSeleccionada.urgencia === 'alta' ? '🔴 Alta' : 
-                         radiografiaSeleccionada.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
-                      </span>
-                    </div>
-                    {radiografiaSeleccionada.motivo_estudio && (
-                      <div className="detalle-item-full">
-                        <strong>🔍 Motivo del Estudio:</strong>
-                        <p>{radiografiaSeleccionada.motivo_estudio}</p>
-                      </div>
-                    )}
+                <div className="detalle-completo">
+                  
+                  {/* TÍTULO DE LA RADIOGRAFÍA */}
+                  <div className="detalle-titulo">
+                    <h3>📸 {radiografiaSeleccionada.tipo_radiografia}</h3>
+                    <span className={`estado-badge estado-${radiografiaSeleccionada.estado?.toLowerCase() || 'pendiente'}`}>
+                      {radiografiaSeleccionada.estado || 'Pendiente'}
+                    </span>
                   </div>
+
+                  {/* INFORMACIÓN DETALLADA EN GRID */}
+                  <div className="detalle-grid-completo">
+                    
+                    <div className="detalle-campo">
+                      <div className="campo-icono">📅</div>
+                      <div className="campo-info">
+                        <strong>FECHA SOLICITUD:</strong>
+                        <span>{formatearFecha(radiografiaSeleccionada.fecha_solicitud)}</span>
+                      </div>
+                    </div>
+
+                    {radiografiaSeleccionada.zona_anatomica && (
+                      <div className="detalle-campo">
+                        <div className="campo-icono">🦷</div>
+                        <div className="campo-info">
+                          <strong>ZONA ANATÓMICA:</strong>
+                          <span>{radiografiaSeleccionada.zona_anatomica}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="detalle-campo">
+                      <div className="campo-icono">⚡</div>
+                      <div className="campo-info">
+                        <strong>URGENCIA:</strong>
+                        <span className={`urgencia-badge urgencia-${radiografiaSeleccionada.urgencia || 'normal'}`}>
+                          {radiografiaSeleccionada.urgencia === 'emergencia' ? '🚨 Emergencia' :
+                           radiografiaSeleccionada.urgencia === 'alta' ? '🔴 Alta' : 
+                           radiografiaSeleccionada.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {radiografiaSeleccionada.centro_radiologico && (
+                      <div className="detalle-campo">
+                        <div className="campo-icono">🏥</div>
+                        <div className="campo-info">
+                          <strong>CENTRO RADIOLÓGICO:</strong>
+                          <span>{radiografiaSeleccionada.centro_radiologico}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {radiografiaSeleccionada.fecha_realizacion && (
+                      <div className="detalle-campo">
+                        <div className="campo-icono">✅</div>
+                        <div className="campo-info">
+                          <strong>FECHA REALIZACIÓN:</strong>
+                          <span>{formatearFecha(radiografiaSeleccionada.fecha_realizacion)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* MOTIVO Y HALLAZGOS */}
+                  {radiografiaSeleccionada.motivo_estudio && (
+                    <div className="detalle-seccion-completa">
+                      <div className="seccion-titulo">
+                        <div className="seccion-icono">🔍</div>
+                        <strong>MOTIVO DEL ESTUDIO:</strong>
+                      </div>
+                      <div className="seccion-contenido">
+                        {radiografiaSeleccionada.motivo_estudio}
+                      </div>
+                    </div>
+                  )}
+
+                  {radiografiaSeleccionada.hallazgos_clinicos && (
+                    <div className="detalle-seccion-completa">
+                      <div className="seccion-titulo">
+                        <div className="seccion-icono">📋</div>
+                        <strong>HALLAZGOS CLÍNICOS:</strong>
+                      </div>
+                      <div className="seccion-contenido">
+                        {radiografiaSeleccionada.hallazgos_clinicos}
+                      </div>
+                    </div>
+                  )}
+
+                  {radiografiaSeleccionada.instrucciones_especiales && (
+                    <div className="detalle-seccion-completa">
+                      <div className="seccion-titulo">
+                        <div className="seccion-icono">🔧</div>
+                        <strong>INSTRUCCIONES ESPECIALES:</strong>
+                      </div>
+                      <div className="seccion-contenido">
+                        {radiografiaSeleccionada.instrucciones_especiales}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IMAGEN SI EXISTE */}
+                  {radiografiaSeleccionada.archivo_imagen && (
+                    <div className="detalle-seccion-completa resultado-seccion">
+                      <div className="seccion-titulo">
+                        <div className="seccion-icono">🖼️</div>
+                        <strong>IMAGEN DE RADIOGRAFÍA:</strong>
+                      </div>
+                      <button 
+                        onClick={() => window.open(buildApiUrl(radiografiaSeleccionada.archivo_imagen), '_blank')}
+                        className="btn-ver-imagen-completo"
+                      >
+                        🖼️ Ver Imagen Completa
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               )}
-              <div className="modal-actions">
+              
+              <div className="modal-acciones">
                 <button 
                   onClick={() => {
                     setModalVerRadiografia(false);
                     setRadiografiaSeleccionada(null);
                   }}
-                  className="btn-secundario"
+                  className="btn-cerrar-modal"
                 >
                   ✅ Cerrar
                 </button>

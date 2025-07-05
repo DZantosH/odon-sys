@@ -9,7 +9,7 @@ import ConsultaActual from './ConsultaActual.js';
 import '../../css/HistorialPacienteIndividual.css';
 import { cargarHistorialPaciente, debugHistorialPaciente } from '../../services/historialService';
 import { FotoActualizadaModal } from '../../components/modals/ModalSystem';
-import EstudiosLaboratorioSection from '../../components/EstudiosLaboratorioSection';
+import EstudiosLaboratorioSection from './EstudiosLaboratorioSection';
 import DentalLoading from '../../components/DentalLoading';
 
 import jsPDF from 'jspdf';

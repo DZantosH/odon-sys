@@ -1,5 +1,5 @@
 // components/modals/ModalSystem.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../css/ModalSystem.css';
 
 // 🎨 COMPONENTE BASE PARA TODOS LOS MODALES
@@ -161,22 +161,25 @@ export const EstadoActualizadoModal = ({
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
+    let timer;
     if (isOpen && autoClose) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         handleClose();
       }, autoCloseDelay);
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen, autoClose, autoCloseDelay]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 300);
-  };
+  }, [onClose]);
 
   const handleOverlayClick = (e) => {
     if (e.target.classList.contains('estado-backdrop')) {
@@ -577,22 +580,25 @@ export const SuccessNotificationModal = ({
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
+    let timer;
     if (isOpen && autoClose) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         handleClose();
       }, autoCloseDelay);
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen, autoClose, autoCloseDelay]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 300);
-  };
+  }, [onClose]);
 
   const handleOverlayClick = (e) => {
     if (e.target.classList.contains('success-backdrop')) {
@@ -674,22 +680,25 @@ export const CitaAgendadaSuccessModal = ({
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
+    let timer;
     if (isOpen && autoClose) {
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         handleClose();
       }, autoCloseDelay);
-      
-      return () => clearTimeout(timer);
     }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen, autoClose, autoCloseDelay]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true);
     setTimeout(() => {
       onClose();
       setIsClosing(false);
     }, 300);
-  };
+  }, [onClose]);
 
   const handleOverlayClick = (e) => {
     if (e.target.classList.contains('success-backdrop')) {
@@ -735,6 +744,293 @@ export const CitaAgendadaSuccessModal = ({
         </div>
       </div>
     </>
+  );
+};
+
+// 🧪 MODAL DE DETALLES DE ESTUDIO DE LABORATORIO
+export const EstudioDetallesModal = ({
+  isOpen,
+  onClose,
+  estudio,
+  formatearFecha,
+  buildApiUrl
+}) => {
+  const handleOverlayClick = (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      onClose();
+    }
+  };
+
+  if (!isOpen || !estudio) return null;
+
+  return (
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-content modal-detalles">
+        <div className="modal-header-detalle">
+          <div className="modal-titulo-seccion">
+            <span className="modal-icono">🧪</span>
+            <h2>Detalles Completos del Estudio</h2>
+          </div>
+          <button 
+            onClick={onClose}
+            className="modal-close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        
+        <div className="modal-body-detalle">
+          <div className="detalle-container">
+            
+            {/* TÍTULO Y ESTADO DEL ESTUDIO */}
+            <div className="detalle-header-card">
+              <div className="detalle-titulo-principal">
+                <h3>{estudio.tipo_estudio}</h3>
+                <span className={`estado-badge-detalle estado-${estudio.estado?.toLowerCase() || 'pendiente'}`}>
+                  {estudio.estado || 'PENDIENTE'}
+                </span>
+              </div>
+            </div>
+
+            {/* INFORMACIÓN PRINCIPAL EN GRID */}
+            <div className="detalle-info-grid">
+              
+              <div className="info-card">
+                <div className="info-header">
+                  <span className="info-icono">📅</span>
+                  <span className="info-label">Fecha de Solicitud</span>
+                </div>
+                <div className="info-valor">
+                  {formatearFecha(estudio.fecha_solicitud)}
+                </div>
+              </div>
+
+              {estudio.laboratorio && (
+                <div className="info-card">
+                  <div className="info-header">
+                    <span className="info-icono">🏥</span>
+                    <span className="info-label">Laboratorio</span>
+                  </div>
+                  <div className="info-valor">
+                    {estudio.laboratorio}
+                  </div>
+                </div>
+              )}
+
+              <div className="info-card">
+                <div className="info-header">
+                  <span className="info-icono">⚡</span>
+                  <span className="info-label">Urgencia</span>
+                </div>
+                <div className="info-valor">
+                  <span className={`urgencia-pill urgencia-${estudio.urgencia || 'normal'}`}>
+                    {estudio.urgencia === 'emergencia' ? '🚨 Emergencia' :
+                     estudio.urgencia === 'alta' ? '🔴 Alta' : 
+                     estudio.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="info-card">
+                <div className="info-header">
+                  <span className="info-icono">🍽️</span>
+                  <span className="info-label">Requiere Ayunas</span>
+                </div>
+                <div className="info-valor">
+                  <span className={`ayunas-pill ${estudio.ayunas === 'si' ? 'ayunas-si' : 'ayunas-no'}`}>
+                    {estudio.ayunas === 'si' ? '✅ Sí' : '❌ No'}
+                  </span>
+                </div>
+              </div>
+
+              {estudio.fecha_realizacion && (
+                <div className="info-card">
+                  <div className="info-header">
+                    <span className="info-icono">✅</span>
+                    <span className="info-label">Fecha de Realización</span>
+                  </div>
+                  <div className="info-valor">
+                    {formatearFecha(estudio.fecha_realizacion)}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* SECCIONES DE TEXTO */}
+            {estudio.descripcion && (
+              <div className="detalle-texto-card">
+                <div className="texto-header">
+                  <span className="texto-icono">📝</span>
+                  <h4>Descripción/Motivo</h4>
+                </div>
+                <div className="texto-contenido">
+                  {estudio.descripcion}
+                </div>
+              </div>
+            )}
+
+            {estudio.instrucciones_especiales && (
+              <div className="detalle-texto-card">
+                <div className="texto-header">
+                  <span className="texto-icono">🔧</span>
+                  <h4>Instrucciones Especiales</h4>
+                </div>
+                <div className="texto-contenido">
+                  {estudio.instrucciones_especiales}
+                </div>
+              </div>
+            )}
+
+            {/* RESULTADO SI EXISTE */}
+            {estudio.archivo_resultado && (
+              <div className="detalle-resultado-card">
+                <div className="resultado-header">
+                  <span className="resultado-icono">📊</span>
+                  <h4>Resultado Disponible</h4>
+                </div>
+                <button 
+                  onClick={() => window.open(buildApiUrl(estudio.archivo_resultado), '_blank')}
+                  className="btn-ver-resultado-modal"
+                >
+                  📊 Abrir Resultado Completo
+                </button>
+              </div>
+            )}
+
+          </div>
+          
+          <div className="modal-footer-acciones">
+            <button 
+              onClick={onClose}
+              className="btn-cerrar-detalle"
+            >
+              ✅ Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 📤 MODAL PARA SUBIR RESULTADO DE ESTUDIO
+export const SubirResultadoModal = ({
+  isOpen,
+  onClose,
+  estudio,
+  formatearFecha,
+  onSubirResultado
+}) => {
+  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
+
+  const handleOverlayClick = (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+      onClose();
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!archivoSeleccionado) {
+      alert('⚠️ Selecciona un archivo primero');
+      return;
+    }
+
+    // Validar tipo de archivo
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(archivoSeleccionado.type)) {
+      alert('⚠️ Tipo de archivo no permitido. Solo se aceptan: PDF, JPG, PNG, DOC, DOCX');
+      return;
+    }
+
+    // Validar tamaño (máximo 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (archivoSeleccionado.size > maxSize) {
+      alert('⚠️ El archivo es demasiado grande. Tamaño máximo: 10MB');
+      return;
+    }
+
+    try {
+      await onSubirResultado(estudio, archivoSeleccionado);
+      setArchivoSeleccionado(null);
+      onClose();
+    } catch (error) {
+      console.error('❌ Error al subir resultado:', error);
+      alert(`❌ Error: ${error.message}`);
+    }
+  };
+
+  const handleClose = () => {
+    setArchivoSeleccionado(null);
+    onClose();
+  };
+
+  if (!isOpen || !estudio) return null;
+
+  return (
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-content modal-subir-resultado">
+        <div className="modal-header">
+          <h2>📤 Subir Resultado de Estudio</h2>
+          <button 
+            onClick={handleClose}
+            className="close-btn"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="modal-body">
+          <div className="info-estudio">
+            <h3>🧪 {estudio.tipo_estudio}</h3>
+            <p><strong>📅 Solicitado:</strong> {formatearFecha(estudio.fecha_solicitud)}</p>
+          </div>
+          <div className="upload-area">
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
+              className="file-input"
+              id="archivo-resultado"
+            />
+            <label htmlFor="archivo-resultado" className="file-label">
+              📄 Seleccionar resultado (PDF, JPG, PNG)
+            </label>
+            
+            {archivoSeleccionado && (
+              <div className="file-selected">
+                <div className="file-info">
+                  <span className="file-icon">
+                    {archivoSeleccionado.type === 'application/pdf' ? '📄' : 
+                     archivoSeleccionado.type.startsWith('image/') ? '🖼️' : '📋'}
+                  </span>
+                  <div className="file-details">
+                    <div className="file-name">✅ {archivoSeleccionado.name}</div>
+                    <div className="file-size">
+                      {(archivoSeleccionado.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="modal-actions">
+            <button 
+              onClick={handleClose}
+              className="btn-secundario"
+            >
+              ❌ Cancelar
+            </button>
+            <button 
+              onClick={handleSubmit}
+              disabled={!archivoSeleccionado}
+              className="btn-primario"
+            >
+              📤 Subir Resultado
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

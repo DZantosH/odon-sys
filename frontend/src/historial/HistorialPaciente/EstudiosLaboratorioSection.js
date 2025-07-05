@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { ConfirmModal } from '../components/modals/ModalSystem';
-import '../css/EstudiosLaboratorioSection.css';
+import { EstudioDetallesModal, SubirResultadoModal, SuccessNotificationModal, ConfirmModal } from '../../components/modals/ModalSystem';
+import '../../css/EstudiosLaboratorioSection.css';
 
 // Modal para solicitar nuevo estudio
 const ModalNuevoEstudio = React.memo(({
@@ -186,228 +186,7 @@ const ModalNuevoEstudio = React.memo(({
   );
 });
 
-// Modal para ver detalles del estudio
-const ModalVerEstudio = React.memo(({
-  isOpen,
-  onClose,
-  estudio,
-  formatearFecha,
-  buildApiUrl,
-  onSubirResultado
-}) => {
-  if (!isOpen || !estudio) return null;
-
-  return (
-    <div className="modal-overlay-estudio">
-      <div className="modal-content-estudio">
-        <div className="modal-header-estudio">
-          <h2>👁️ Detalles del Estudio</h2>
-          <button onClick={onClose} className="close-btn-estudio">✕</button>
-        </div>
-
-        <div className="modal-body-estudio">
-          <div className="detalle-estudio">
-            <div className="info-estudio">
-              <h3>🔬 {estudio.tipo_estudio}</h3>
-              <p><strong>Estado:</strong> 
-                <span className={`estado-badge estado-${estudio.estado?.toLowerCase() || 'pendiente'}`}>
-                  {estudio.estado || 'Pendiente'}
-                </span>
-              </p>
-            </div>
-
-            <div className="detalles-grid">
-              <div className="detalle-item">
-                <strong>📅 Fecha Solicitud:</strong>
-                <span>{formatearFecha(estudio.fecha_solicitud)}</span>
-              </div>
-
-              {estudio.fecha_realizacion && (
-                <div className="detalle-item">
-                  <strong>✅ Fecha Realización:</strong>
-                  <span>{formatearFecha(estudio.fecha_realizacion)}</span>
-                </div>
-              )}
-
-              <div className="detalle-item">
-                <strong>⚡ Urgencia:</strong>
-                <span className={`urgencia urgencia-${estudio.urgencia || 'normal'}`}>
-                  {estudio.urgencia === 'alta' ? '🔴 Alta' : 
-                   estudio.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
-                </span>
-              </div>
-
-              {estudio.laboratorio_recomendado && (
-                <div className="detalle-item">
-                  <strong>🏥 Laboratorio:</strong>
-                  <span>{estudio.laboratorio_recomendado}</span>
-                </div>
-              )}
-
-              {estudio.ayunas_requerido && (
-                <div className="detalle-item">
-                  <strong>🍽️ Ayunas:</strong>
-                  <span>✅ Requerido</span>
-                </div>
-              )}
-
-              {estudio.descripcion && (
-                <div className="detalle-item-full">
-                  <strong>📝 Descripción:</strong>
-                  <p>{estudio.descripcion}</p>
-                </div>
-              )}
-
-              {estudio.preparacion_especial && (
-                <div className="detalle-item-full">
-                  <strong>🔧 Preparación Especial:</strong>
-                  <p>{estudio.preparacion_especial}</p>
-                </div>
-              )}
-
-              {estudio.notas_medicas && (
-                <div className="detalle-item-full">
-                  <strong>📋 Notas Médicas:</strong>
-                  <p>{estudio.notas_medicas}</p>
-                </div>
-              )}
-
-              {estudio.archivo_resultado && (
-                <div className="detalle-item-full">
-                  <strong>📄 Resultado:</strong>
-                  <a 
-                    href={buildApiUrl(estudio.archivo_resultado)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="link-resultado"
-                  >
-                    📄 Descargar PDF
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="modal-actions-estudio">
-            <button onClick={onClose} className="btn-cancelar-estudio">
-              ✅ Cerrar
-            </button>
-            
-            {!estudio.archivo_resultado && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onSubirResultado(estudio);
-                }}
-                className="btn-solicitar-estudio"
-              >
-                📤 Subir Resultado
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// Modal para subir resultado PDF
-const ModalSubirResultado = React.memo(({
-  isOpen,
-  onClose,
-  estudio,
-  formatearFecha,
-  onSubir,
-  subiendoArchivo
-}) => {
-  const [archivoSeleccionado, setArchivoSeleccionado] = useState(null);
-
-  const handleSubmit = async () => {
-    if (!archivoSeleccionado) {
-      alert('⚠️ Por favor selecciona un archivo PDF');
-      return;
-    }
-    
-    await onSubir(archivoSeleccionado);
-    setArchivoSeleccionado(null);
-  };
-
-  const handleClose = () => {
-    setArchivoSeleccionado(null);
-    onClose();
-  };
-
-  if (!isOpen || !estudio) return null;
-
-  return (
-    <div className="modal-overlay-estudio">
-      <div className="modal-content-estudio">
-        <div className="modal-header-estudio">
-          <h2>📤 Subir Resultado de Laboratorio</h2>
-          <button onClick={handleClose} className="close-btn-estudio" disabled={subiendoArchivo}>
-            ✕
-          </button>
-        </div>
-
-        <div className="modal-body-estudio">
-          <div className="info-estudio">
-            <h3>🔬 {estudio.tipo_estudio}</h3>
-            <p><strong>📅 Solicitado:</strong> {formatearFecha(estudio.fecha_solicitud)}</p>
-            {estudio.descripcion && (
-              <p><strong>📝 Descripción:</strong> {estudio.descripcion}</p>
-            )}
-          </div>
-
-          <div className="upload-area">
-            <input
-              type="file"
-              accept=".pdf"
-              onChange={(e) => setArchivoSeleccionado(e.target.files[0])}
-              className="file-input-estudio"
-              id="archivo-resultado"
-              disabled={subiendoArchivo}
-            />
-            <label htmlFor="archivo-resultado" className="file-label-estudio">
-              📄 Seleccionar archivo PDF
-            </label>
-            
-            {archivoSeleccionado && (
-              <div className="file-selected">
-                ✅ Archivo seleccionado: {archivoSeleccionado.name}
-              </div>
-            )}
-          </div>
-
-          <div className="modal-actions-estudio">
-            <button 
-              onClick={handleClose}
-              className="btn-cancelar-estudio"
-              disabled={subiendoArchivo}
-            >
-              ❌ Cancelar
-            </button>
-            <button 
-              onClick={handleSubmit}
-              disabled={!archivoSeleccionado || subiendoArchivo}
-              className={`btn-solicitar-estudio ${subiendoArchivo ? 'loading' : ''}`}
-            >
-              {subiendoArchivo ? (
-                <>
-                  <span className="spinner-btn"></span>
-                  ⏳ Subiendo...
-                </>
-              ) : (
-                '📤 Subir Resultado'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-// Componente principal
+// ===== COMPONENTE PRINCIPAL CON VISTA SIMPLIFICADA =====
 const EstudiosLaboratorioSection = ({
   estudiosLaboratorio = [],
   loadingEstudios = false,
@@ -415,15 +194,22 @@ const EstudiosLaboratorioSection = ({
   buildApiUrl,
   onSolicitarNuevo,
   onRecargar,
-  getAuthHeaders // ✅ Agregamos esta prop para los headers de autenticación
+  getAuthHeaders
 }) => {
-  // Estados para modales
+  // Estados para modales del formulario personalizado
   const [modalNuevoEstudioOpen, setModalNuevoEstudioOpen] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  
+  // Estados para modales del sistema unificado
   const [modalVerEstudioOpen, setModalVerEstudioOpen] = useState(false);
   const [modalSubirResultadoOpen, setModalSubirResultadoOpen] = useState(false);
   const [estudioSeleccionado, setEstudioSeleccionado] = useState(null);
-  const [submitLoading, setSubmitLoading] = useState(false);
   const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+  
+  // Estados para notificaciones
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [successTitle, setSuccessTitle] = useState('');
   
   // Estados para modal de confirmación
   const [modalConfirmacionOpen, setModalConfirmacionOpen] = useState(false);
@@ -454,7 +240,6 @@ const EstudiosLaboratorioSection = ({
       
       setSubmitLoading(true);
       
-      // Validación básica
       if (!formNuevoEstudio.tipo_estudio?.trim()) {
         alert('⚠️ Por favor selecciona un tipo de estudio');
         return;
@@ -469,25 +254,14 @@ const EstudiosLaboratorioSection = ({
       if (resultado !== false) {
         console.log('✅ Estudio solicitado exitosamente');
         
-        // Cerrar modal del formulario
         setModalNuevoEstudioOpen(false);
         
-        // Preparar datos para el modal de confirmación
-        setDatosConfirmacion({
-          tipo_estudio: formNuevoEstudio.tipo_estudio,
-          laboratorio: formNuevoEstudio.laboratorio_recomendado || 'No especificado',
-          urgencia: formNuevoEstudio.urgencia,
-          fecha: new Date().toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })
-        });
+        // Mostrar notificación de éxito con el sistema unificado
+        setSuccessTitle('¡Estudio Solicitado Exitosamente!');
+        setSuccessMessage(`El estudio "${formNuevoEstudio.tipo_estudio}" ha sido registrado correctamente en el sistema.`);
+        setShowSuccessNotification(true);
         
-        // Mostrar modal de confirmación en la esquina superior derecha
-        setModalConfirmacionOpen(true);
-        
-        // Limpiar formulario
+        // Resetear formulario
         setFormNuevoEstudio({
           tipo_estudio: '',
           descripcion: '',
@@ -498,7 +272,6 @@ const EstudiosLaboratorioSection = ({
           preparacion_especial: ''
         });
         
-        // Recargar la lista si hay función de recarga
         if (onRecargar) {
           console.log('🔄 Recargando lista de estudios...');
           await onRecargar();
@@ -514,20 +287,18 @@ const EstudiosLaboratorioSection = ({
     }
   };
 
-  const handleSubirResultado = async (archivo) => {
+  const handleSubirResultado = async (estudio, archivo) => {
     try {
       setSubiendoArchivo(true);
       
-      console.log('📤 Subiendo archivo:', archivo.name, 'para estudio:', estudioSeleccionado.id);
+      console.log('📤 Subiendo archivo:', archivo.name, 'para estudio:', estudio.id);
       
-      // Crear FormData para subir el archivo
       const formData = new FormData();
       formData.append('archivo', archivo);
-      formData.append('estudio_id', estudioSeleccionado.id);
+      formData.append('estudio_id', estudio.id);
       formData.append('fecha_realizacion', new Date().toISOString().split('T')[0]);
 
-      // Subir archivo al backend
-      const response = await fetch(buildApiUrl(`/estudios-laboratorio/${estudioSeleccionado.id}/resultado`), {
+      const response = await fetch(buildApiUrl(`/estudios-laboratorio/${estudio.id}/resultado`), {
         method: 'POST',
         headers: getAuthHeaders ? {
           'Authorization': getAuthHeaders().Authorization
@@ -545,41 +316,20 @@ const EstudiosLaboratorioSection = ({
       const resultado = await response.json();
       console.log('✅ Archivo subido:', resultado);
       
-      // Cerrar modal de subir resultado
       setModalSubirResultadoOpen(false);
       
-      // Preparar datos para el modal de confirmación
-      setDatosConfirmacion({
-        tipo_estudio: estudioSeleccionado.tipo_estudio,
-        archivo: archivo.name,
-        fecha: new Date().toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }),
-        accion: 'subida' // Para diferenciar del modal de solicitud
-      });
+      // Mostrar notificación de éxito
+      setSuccessTitle('¡Resultado Subido Exitosamente!');
+      setSuccessMessage(`El archivo "${archivo.name}" se ha subido correctamente para el estudio "${estudio.tipo_estudio}".`);
+      setShowSuccessNotification(true);
       
-      // Mostrar modal de confirmación en esquina superior derecha
-      setModalConfirmacionOpen(true);
-      
-      // Recargar la lista
       if (onRecargar) {
         await onRecargar();
       }
       
     } catch (error) {
       console.error('❌ Error al subir archivo:', error);
-      
-      // Preparar datos para modal de error
-      setDatosConfirmacion({
-        tipo_estudio: estudioSeleccionado.tipo_estudio,
-        error: error.message,
-        accion: 'error'
-      });
-      
-      // Mostrar modal de error
-      setModalConfirmacionOpen(true);
+      alert(`❌ Error al subir archivo: ${error.message}`);
     } finally {
       setSubiendoArchivo(false);
     }
@@ -620,7 +370,6 @@ const EstudiosLaboratorioSection = ({
           🔬 Solicitar Primer Estudio
         </button>
 
-        {/* Modal para nuevo estudio */}
         <ModalNuevoEstudio
           isOpen={modalNuevoEstudioOpen}
           onClose={() => setModalNuevoEstudioOpen(false)}
@@ -629,11 +378,22 @@ const EstudiosLaboratorioSection = ({
           onSubmit={handleSolicitarNuevo}
           submitLoading={submitLoading}
         />
+
+        {/* Notificación de éxito */}
+        <SuccessNotificationModal
+          isOpen={showSuccessNotification}
+          onClose={() => setShowSuccessNotification(false)}
+          title={successTitle}
+          message={successMessage}
+          autoClose={true}
+          autoCloseDelay={4000}
+          icon="🔬"
+        />
       </div>
     );
   }
 
-  // Render principal con estudios
+  // ===== RENDER PRINCIPAL CON VISTA SIMPLIFICADA =====
   return (
     <div className="seccion-completa-estudios">
       <div className="seccion-header-estudios">
@@ -656,95 +416,61 @@ const EstudiosLaboratorioSection = ({
         </div>
       </div>
 
-      <div className="estudios-grid">
+      {/* ===== LISTA SIMPLIFICADA ===== */}
+      <div className="estudios-lista-simple">
         {estudiosLaboratorio.map((estudio) => (
-          <div key={estudio.id} className="estudio-card">
-            <div className="estudio-header">
-              <h4>{estudio.tipo_estudio || 'Estudio General'}</h4>
-              <span className={`estado-badge estado-${estudio.estado?.toLowerCase() || 'pendiente'}`}>
-                {estudio.estado || 'Pendiente'}
-              </span>
-            </div>
-
-            <div className="estudio-info">
-              <div className="info-item">
-                <strong>📅 Fecha Solicitud:</strong>
-                <span>{formatearFecha(estudio.fecha_solicitud)}</span>
-              </div>
-
-              {estudio.laboratorio_recomendado && (
-                <div className="info-item">
-                  <strong>🏥 Laboratorio:</strong>
-                  <span>{estudio.laboratorio_recomendado}</span>
-                </div>
-              )}
-
-              <div className="info-item">
-                <strong>⚡ Urgencia:</strong>
-                <span className={`urgencia urgencia-${estudio.urgencia || 'normal'}`}>
-                  {estudio.urgencia === 'alta' ? '🔴 Alta' : 
-                   estudio.urgencia === 'media' ? '🟡 Media' : '🟢 Normal'}
+          <div key={estudio.id} className="estudio-item-simple">
+            
+            {/* INFORMACIÓN BÁSICA - SOLO LO ESENCIAL */}
+            <div className="estudio-info-basica">
+              <div className="estudio-nombre">
+                <h4>{estudio.tipo_estudio || 'Estudio General'}</h4>
+                <span className={`estado-simple estado-${estudio.estado?.toLowerCase() || 'pendiente'}`}>
+                  {estudio.estado || 'PENDIENTE'}
                 </span>
               </div>
-
-              {estudio.ayunas_requerido && (
-                <div className="info-item">
-                  <strong>🍽️ Ayunas:</strong>
-                  <span>✅ Requerido</span>
-                </div>
-              )}
-
-              {estudio.descripcion && (
-                <div className="info-item">
-                  <strong>📝 Descripción:</strong>
-                  <p>{estudio.descripcion}</p>
-                </div>
-              )}
-
-              {estudio.fecha_realizacion && (
-                <div className="info-item">
-                  <strong>✅ Fecha Realización:</strong>
-                  <span>{formatearFecha(estudio.fecha_realizacion)}</span>
-                </div>
-              )}
-
-              {estudio.archivo_resultado && (
-                <div className="info-item">
-                  <strong>📄 Resultado:</strong>
-                  <a 
-                    href={buildApiUrl(estudio.archivo_resultado)} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="link-resultado"
-                  >
-                    📄 Ver PDF
-                  </a>
-                </div>
-              )}
+              
+              <div className="estudio-fecha">
+                <span className="fecha-label">📅 FECHA SOLICITUD:</span>
+                <span className="fecha-valor">{formatearFecha(estudio.fecha_solicitud)}</span>
+              </div>
             </div>
 
-            <div className="estudio-acciones">
-              <button
+            {/* BOTONES DE ACCIÓN */}
+            <div className="estudio-acciones-simple">
+              <button 
                 onClick={() => abrirModalVerEstudio(estudio)}
-                className="btn-secundario-estudios"
+                className="btn-ver-detalles-simple"
               >
-                👁️ Ver Detalles
+                🔍 Ver Detalles
               </button>
+              
+              {estudio.archivo_resultado && (
+                <a 
+                  href={buildApiUrl(estudio.archivo_resultado)} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn-ver-resultado-simple"
+                >
+                  📄 Ver Resultado
+                </a>
+              )}
               
               {!estudio.archivo_resultado && (
                 <button
                   onClick={() => abrirModalSubirResultado(estudio)}
-                  className="btn-primario-estudios"
+                  className="btn-subir-resultado-simple"
                 >
                   📤 Subir Resultado
                 </button>
               )}
             </div>
+
           </div>
         ))}
       </div>
 
-      {/* MODALES */}
+      {/* MODAL PERSONALIZADO PARA NUEVO ESTUDIO */}
       <ModalNuevoEstudio
         isOpen={modalNuevoEstudioOpen}
         onClose={() => setModalNuevoEstudioOpen(false)}
@@ -754,59 +480,37 @@ const EstudiosLaboratorioSection = ({
         submitLoading={submitLoading}
       />
 
-      <ModalVerEstudio
+      {/* MODALES DEL SISTEMA UNIFICADO */}
+      <EstudioDetallesModal
         isOpen={modalVerEstudioOpen}
         onClose={() => setModalVerEstudioOpen(false)}
         estudio={estudioSeleccionado}
         formatearFecha={formatearFecha}
         buildApiUrl={buildApiUrl}
-        onSubirResultado={abrirModalSubirResultado}
       />
 
-      <ModalSubirResultado
+      <SubirResultadoModal
         isOpen={modalSubirResultadoOpen}
         onClose={() => setModalSubirResultadoOpen(false)}
         estudio={estudioSeleccionado}
         formatearFecha={formatearFecha}
-        onSubir={handleSubirResultado}
-        subiendoArchivo={subiendoArchivo}
+        onSubirResultado={handleSubirResultado}
       />
 
-      {/* Modal de confirmación en esquina superior derecha */}
-      <ConfirmModal
-        isOpen={modalConfirmacionOpen}
-        onClose={() => setModalConfirmacionOpen(false)}
-        onConfirm={() => setModalConfirmacionOpen(false)}
-        title={
-          datosConfirmacion.accion === 'subida' 
-            ? '¡Resultado Subido Exitosamente!' 
-            : datosConfirmacion.accion === 'error'
-            ? '❌ Error al Subir Archivo'
-            : '¡Estudio Solicitado Exitosamente!'
-        }
-        message={
-          datosConfirmacion.accion === 'subida'
-            ? `El archivo "${datosConfirmacion.archivo}" se ha subido correctamente para el estudio "${datosConfirmacion.tipo_estudio}".`
-            : datosConfirmacion.accion === 'error'
-            ? `No se pudo subir el archivo para "${datosConfirmacion.tipo_estudio}": ${datosConfirmacion.error}`
-            : `El estudio "${datosConfirmacion.tipo_estudio}" ha sido registrado correctamente en el sistema.`
-        }
-        confirmText="Entendido"
-        icon={
-          datosConfirmacion.accion === 'error' ? '❌' : '✅'
-        }
-        type={
-          datosConfirmacion.accion === 'error' ? 'danger' : 'success'
-        }
-        position="top-right"
-        showIcon={true}
+      {/* NOTIFICACIONES DE ÉXITO */}
+      <SuccessNotificationModal
+        isOpen={showSuccessNotification}
+        onClose={() => setShowSuccessNotification(false)}
+        title={successTitle}
+        message={successMessage}
+        autoClose={true}
+        autoCloseDelay={4000}
+        icon="✅"
       />
     </div>
   );
 };
 
 ModalNuevoEstudio.displayName = 'ModalNuevoEstudio';
-ModalVerEstudio.displayName = 'ModalVerEstudio';
-ModalSubirResultado.displayName = 'ModalSubirResultado';
 
 export default EstudiosLaboratorioSection;
