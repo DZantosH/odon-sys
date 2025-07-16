@@ -1,0 +1,587 @@
+/* ===== CALENDARIO DINÁMICO OPTIMIZADO ===== */
+
+/* Contenedor principal del calendario */
+.modal-calendario-container {
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(6, 214, 160, 0.3);
+  border-radius: 12px;
+  padding: 12px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.modal-calendario-container:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: #06D6A0;
+}
+
+/* ===== HEADER DEL CALENDARIO ===== */
+.modal-calendario-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(6, 214, 160, 0.2);
+  flex-shrink: 0;
+  height: 50px;
+}
+
+.modal-calendario-nav-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.modal-calendario-nav-btn {
+  background: rgba(6, 214, 160, 0.1);
+  border: 1px solid rgba(6, 214, 160, 0.3);
+  color: #1E3A8A;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.modal-calendario-nav-btn:hover {
+  background: rgba(6, 214, 160, 0.2);
+  border-color: #06D6A0;
+  transform: translateY(-1px);
+  color: white;
+}
+
+.modal-calendario-current-month-year {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.modal-calendario-current-month-year h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1E3A8A;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.modal-calendario-btn-today {
+  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
+  border: none;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-calendario-btn-today:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(6, 214, 160, 0.3);
+}
+
+/* ===== LEYENDA DEL CALENDARIO ===== */
+.modal-calendario-leyenda {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+  padding: 6px;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 4px;
+  border: 1px solid rgba(6, 214, 160, 0.2);
+  flex-shrink: 0;
+  height: 32px;
+}
+
+.modal-calendario-leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8px;
+  color: #1E3A8A;
+  font-weight: 500;
+}
+
+.modal-calendario-color-muestra {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(30, 58, 138, 0.2);
+}
+
+/* Colores de estados */
+.modal-calendario-color-muestra-vacio {
+  background: white !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.modal-calendario-color-muestra-libre {
+  background: #22c55e !important;
+}
+
+.modal-calendario-color-muestra-medio {
+  background: #eab308 !important;
+}
+
+.modal-calendario-color-muestra-ocupado {
+  background: #f97316 !important;
+}
+
+.modal-calendario-color-muestra-completo {
+  background: #ef4444 !important;
+}
+
+/* ===== GRID DEL CALENDARIO ===== */
+.modal-calendario-grid-dynamic {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: auto repeat(6, 1fr); /* Header + 6 filas de semanas */
+  gap: 2px;
+  flex: 1;
+  align-content: start;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.15);
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== DÍAS DEL CALENDARIO ===== */
+.modal-calendario-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  position: relative;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #1E3A8A;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 2px;
+  cursor: default;
+}
+
+/* Headers de días de la semana */
+.modal-calendario-day.modal-calendario-header {
+  background: #F8FAFC !important;
+  color: #1E3A8A !important;
+  font-weight: 700 !important;
+  font-size: 9px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  border: 1px solid #e2e8f0 !important;
+  height: 100% !important;
+  grid-row: 1;
+}
+
+/* Días vacíos */
+.modal-calendario-empty {
+  background: transparent !important;
+  border: none !important;
+  color: transparent !important;
+}
+
+/* Días clickeables */
+.modal-calendario-clickable {
+  cursor: pointer;
+  color: #1E3A8A !important;
+}
+
+.modal-calendario-clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 10;
+}
+
+/* ===== ESTADOS DEL CALENDARIO ===== */
+.modal-calendario-estado-libre {
+  background: #22c55e !important;
+  color: white !important;
+  border-color: #16a34a !important;
+}
+
+.modal-calendario-estado-medio {
+  background: #eab308 !important;
+  color: white !important;
+  border-color: #ca8a04 !important;
+}
+
+.modal-calendario-estado-ocupado {
+  background: #f97316 !important;
+  color: white !important;
+  border-color: #ea580c !important;
+}
+
+.modal-calendario-estado-completo {
+  background: #ef4444 !important;
+  color: white !important;
+  border-color: #dc2626 !important;
+}
+
+.modal-calendario-estado-vacio {
+  background: white !important;
+  color: #1E3A8A !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Día actual */
+.modal-calendario-today {
+  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%) !important;
+  color: white !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 0 2px rgba(6, 214, 160, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ===== NÚMEROS Y CONTADORES ===== */
+.modal-calendario-day-number {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: inherit !important;
+  z-index: 2 !important;
+  position: relative !important;
+}
+
+.modal-calendario-citas-count {
+  position: absolute !important;
+  top: 1px !important;
+  right: 1px !important;
+  background: #87CEEB !important;
+  color: white !important;
+  font-size: 6px !important;
+  font-weight: 800 !important;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  z-index: 3 !important;
+  border: 1px solid white !important;
+}
+
+/* ===== LOADING ===== */
+.modal-calendario-loading {
+  grid-column: span 7;
+  grid-row: span 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 12px;
+  color: #1E3A8A;
+  font-size: 14px;
+}
+
+.modal-calendario-loading-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #06D6A0;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ===== MODAL DE CITAS DEL DÍA ===== */
+.modal-calendario-citas-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 58, 138, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(5px);
+}
+
+.modal-calendario-citas-modal-content {
+  background: #FFFFFF;
+  border: 2px solid #06D6A0;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(30, 58, 138, 0.3);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-calendario-citas-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid #06D6A0;
+  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-calendario-citas-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-calendario-citas-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: var(--transition);
+}
+
+.modal-calendario-citas-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-calendario-citas-modal-body {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+  color: #1E3A8A;
+}
+
+.modal-calendario-citas-no-citas-hoy {
+  text-align: center;
+  padding: 40px 20px;
+  color: #87CEEB;
+}
+
+.modal-calendario-citas-total-citas-texto {
+  font-size: 14px;
+  font-weight: 600;
+  color: #06D6A0;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.modal-calendario-citas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-calendario-citas-cita-card {
+  background: rgba(248, 250, 252, 0.5);
+  border: 1px solid rgba(6, 214, 160, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: var(--transition);
+}
+
+.modal-calendario-citas-cita-card:hover {
+  background: rgba(6, 214, 160, 0.1);
+  border-color: #06D6A0;
+}
+
+.modal-calendario-citas-cita-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modal-calendario-citas-cita-hora {
+  font-size: 16px;
+  font-weight: 800;
+  color: #06D6A0;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.modal-calendario-citas-cita-paciente {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1E3A8A;
+}
+
+.modal-calendario-citas-cita-tipo {
+  font-size: 12px;
+  color: #87CEEB;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.modal-calendario-citas-info-doctor,
+.modal-calendario-citas-info-estado,
+.modal-calendario-citas-info-observaciones,
+.modal-calendario-citas-info-precio {
+  font-size: 13px;
+  margin-bottom: 4px;
+  color: #1E3A8A;
+}
+
+.modal-calendario-citas-estado-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
+}
+
+.modal-calendario-citas-estado-pendiente {
+  background: rgba(6, 214, 160, 0.2);
+  color: #06D6A0;
+}
+
+.modal-calendario-citas-estado-confirmada {
+  background: rgba(135, 206, 235, 0.2);
+  color: #87CEEB;
+}
+
+.modal-calendario-citas-estado-completada {
+  background: rgba(6, 214, 160, 0.3);
+  color: #06D6A0;
+}
+
+/* ===== RESPONSIVE CALENDARIO ===== */
+@media (max-width: 768px) {
+  .modal-calendario-container {
+    padding: 8px;
+    gap: 6px;
+  }
+  
+  .modal-calendario-header {
+    height: 45px;
+  }
+  
+  .modal-calendario-leyenda {
+    height: 28px;
+    gap: 3px;
+    padding: 4px;
+  }
+  
+  .modal-calendario-leyenda-item {
+    font-size: 7px;
+  }
+  
+  .modal-calendario-grid-dynamic {
+    gap: 1px;
+    padding: 6px;
+    grid-template-rows: auto repeat(5, 1fr); /* 5 filas en tablets */
+  }
+  
+  .modal-calendario-day {
+    font-size: 10px;
+    padding: 1px;
+  }
+  
+  .modal-calendario-day.modal-calendario-header {
+    font-size: 8px !important;
+  }
+  
+  .modal-calendario-day-number {
+    font-size: 9px !important;
+  }
+  
+  .modal-calendario-citas-count {
+    width: 8px !important;
+    height: 8px !important;
+    font-size: 5px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-calendario-container {
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .modal-calendario-header {
+    height: 40px;
+  }
+  
+  .modal-calendario-current-month-year h3 {
+    font-size: 12px;
+  }
+  
+  .modal-calendario-nav-btn {
+    font-size: 9px;
+    padding: 3px 6px;
+  }
+  
+  .modal-calendario-leyenda {
+    height: 24px;
+  }
+  
+  .modal-calendario-leyenda-item {
+    font-size: 6px;
+  }
+  
+  .modal-calendario-color-muestra {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .modal-calendario-grid-dynamic {
+    padding: 4px;
+    grid-template-rows: auto repeat(4, 1fr); /* 4 filas en móviles */
+  }
+  
+  .modal-calendario-day {
+    font-size: 9px;
+    padding: 1px;
+  }
+  
+  .modal-calendario-day.modal-calendario-header {
+    font-size: 7px !important;
+  }
+  
+  .modal-calendario-day-number {
+    font-size: 8px !important;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

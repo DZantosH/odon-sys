@@ -6,15 +6,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import AgendarCitasSidebar from '../components/AgendarCitasSidebar';
 import CalendarioDinamico from '../components/CalendarioDinamico';
 import DentalLoading from '../components/DentalLoading';
-// ✅ IMPORTACIONES CORREGIDAS
-import { 
-  CancelCitaModal, 
+import {
+  ConfirmModal,
+  EstadoActualizadoModal,
+  SuccessNotificationModal,
   CitaCanceladaSuccessModal,
   CitaAgendadaSuccessModal,
-  ConsultaModal,
-  useModal 
+  useModal,
+  useSuccessNotification
 } from '../components/modals/ModalSystem';
+import {
+  CancelCitaModal,
+  ConsultaModal,
+  useAlerta
+} from '../components/modals/AlertaSystem';
 import '../css/PanelPrincipal.css';
+
 
 const PanelPrincipal = () => {
   const navigate = useNavigate();
@@ -206,51 +213,56 @@ const PanelPrincipal = () => {
   };
 
   // ✅ FUNCIÓN ACTUALIZADA PARA INICIAR CONSULTA CON MODAL
-  const handleIniciarConsulta = async (cita) => {
-    try {
-      console.log('🩺 [INICIAR CONSULTA] ===========================');
-      
-      // Actualizar estado de la cita
-      const response = await fetch(`/api/citas/${cita.id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          estado: 'En_Proceso',
-          notas: `Paciente llegó - Consulta iniciada el ${new Date().toLocaleString('es-MX')}`
-        })
-      });
+// ✅ FUNCIÓN CORREGIDA - Solo mostrar modal sin cambiar estado
+const handleIniciarConsulta = async (cita) => {
+  try {
+    console.log('🩺 [INICIAR CONSULTA] ===========================');
+    
+    const pacienteNombre = cita.paciente_nombre_completo || 
+                         `${cita.paciente_nombre || ''} ${cita.paciente_apellido || ''}`.trim() ||
+                         cita.nombre_paciente || 'Paciente';
+    
+    console.log('👤 Nombre del paciente:', pacienteNombre);
+    
+    // ✅ SOLO MOSTRAR MODAL - NO CAMBIAR ESTADO AÚN
+    setConsultaModal({
+      isOpen: true,
+      citaData: cita,
+      pacienteNombre: pacienteNombre
+    });
+    
+  } catch (error) {
+    console.error('❌ Error al preparar consulta:', error);
+    alert('❌ Error al preparar la consulta. Intente nuevamente.');
+  }
+};
 
-      if (response.ok) {
-        console.log('✅ Estado de cita actualizado a En_Proceso');
-        
-        // Recargar citas para mostrar el cambio
-        cargarDatosDashboard();
-        
-        const pacienteNombre = cita.paciente_nombre_completo || 
-                             `${cita.paciente_nombre || ''} ${cita.paciente_apellido || ''}`.trim() ||
-                             cita.nombre_paciente || 'Paciente';
-        
-        console.log('👤 Nombre del paciente:', pacienteNombre);
-        
-        // ✅ MOSTRAR MODAL DE CONSULTA EN LUGAR DE CONFIRM NATIVO
-        setConsultaModal({
-          isOpen: true,
-          citaData: cita,
-          pacienteNombre: pacienteNombre
-        });
-        
-      } else {
-        throw new Error('Error al actualizar estado de la cita');
-      }
-    } catch (error) {
-      console.error('❌ Error al iniciar consulta:', error);
-      alert('❌ Error al iniciar la consulta. Intente nuevamente.');
+// ✅ FUNCIÓN MODIFICADA - Cambiar estado SOLO al confirmar
+const handleConfirmarIrHistorial = async () => {
+  const { citaData } = consultaModal;
+  
+  try {
+    console.log('🔄 Actualizando estado de cita a En_Proceso...');
+    console.log('📋 Datos de la cita:', citaData);
+    
+    // ✅ AHORA SÍ CAMBIAR EL ESTADO AL CONFIRMAR
+    const response = await fetch(`/api/citas/${citaData.id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        estado: 'En_Proceso',
+        notas: `Paciente llegó - Consulta iniciada el ${new Date().toLocaleString('es-MX')}`
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al actualizar estado de la cita');
     }
-  };
 
- // ✅ FUNCIÓN MODIFICADA PARA CONFIRMAR IR AL HISTORIAL CON LOADING DENTAL
-  const handleConfirmarIrHistorial = () => {
-    const { citaData } = consultaModal;
+    console.log('✅ Estado de cita actualizado a En_Proceso');
+    
+    // Recargar citas para mostrar el cambio
+    cargarDatosDashboard();
     
     console.log('🦷 Iniciando transición con loading dental...');
     
@@ -274,30 +286,47 @@ const PanelPrincipal = () => {
       correo_electronico: citaData.paciente_email || ''
     };
     
+    console.log('👤 Datos del paciente preparados:', pacienteData);
+    console.log('🔗 URL destino:', `/pacientes/${citaData.paciente_id}/historial`);
+    
     // ✅ NAVEGAR DESPUÉS DEL LOADING DENTAL
     setTimeout(() => {
-  console.log('🎯 Navegando a historial con consulta activa...');
-  
-  navigate(`/pacientes/${citaData.paciente_id}/historial`, {
-    state: {
-      paciente: pacienteData,
-      origen: 'citas-del-dia',
-      vistaInicial: 'consulta-actual',
-      consultaIniciada: true,
-      citaId: citaData.id,
-      cita: citaData,
-      timestamp: Date.now()
-    }
-  });
-  
-  // ✅ MOVER ESTA LÍNEA DESPUÉS DE LA NAVEGACIÓN
-  setTimeout(() => {
+      console.log('🎯 Navegando a historial con consulta activa...');
+      
+      const navigationState = {
+        paciente: pacienteData,
+        origen: 'citas-del-dia',
+        vistaInicial: 'consulta-actual',
+        consultaIniciada: true,
+        citaId: citaData.id,
+        cita: citaData,
+        timestamp: Date.now()
+      };
+      
+      console.log('📦 Estado de navegación:', navigationState);
+      
+      // ✅ NAVEGACIÓN CORREGIDA - Usar el parámetro correcto
+      navigate(`/pacientes/${citaData.paciente_id}/historial`, {
+        state: navigationState,
+        replace: true // Esto evita problemas con el historial del navegador
+      });
+      
+      // ✅ OCULTAR LOADING DESPUÉS DE LA NAVEGACIÓN
+      setTimeout(() => {
+        setShowTransitionLoading(false);
+        console.log('✅ Navegación ejecutada correctamente');
+      }, 500);
+      
+    }, 2000); // Tiempo reducido para mejor UX
+    
+  } catch (error) {
+    console.error('❌ Error al confirmar consulta:', error);
+    alert(`❌ Error al iniciar la consulta: ${error.message}`);
+    
+    // En caso de error, ocultar loading
     setShowTransitionLoading(false);
-  }, 500);
-  
-  console.log('✅ Navegación ejecutada correctamente');
-}, 3000);
-  };
+  }
+};
 
   // ✅ FUNCIÓN PARA COMPLETAR LOADING DE TRANSICIÓN
   const handleTransitionLoadingComplete = () => {
@@ -305,14 +334,19 @@ const PanelPrincipal = () => {
   };
 
 
-  // ✅ FUNCIÓN PARA CERRAR MODAL DE CONSULTA
-  const handleCerrarConsultaModal = () => {
-    setConsultaModal({
-      isOpen: false,
-      citaData: {},
-      pacienteNombre: ''
-    });
-  };
+// ✅ FUNCIÓN PARA CANCELAR - Solo cerrar modal sin cambios
+const handleCerrarConsultaModal = () => {
+  console.log('❌ Usuario canceló el inicio de consulta');
+  
+  setConsultaModal({
+    isOpen: false,
+    citaData: {},
+    pacienteNombre: ''
+  });
+  
+  // ✅ NO hacer nada más - la cita mantiene su estado original
+  console.log('✅ Cita mantiene su estado original');
+};
 
   // FUNCIÓN PARA CONTINUAR CONSULTA
   const handleContinuarConsulta = (cita) => {

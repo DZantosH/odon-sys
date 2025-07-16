@@ -6,11 +6,17 @@ const verificarYActualizarCitasVencidas = async () => {
   try {
     console.log('🔄 [AUTO-UPDATE] Verificando citas vencidas...');
     
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('⚠️ [AUTO-UPDATE] No hay token disponible');
+      return 0;
+    }
+    
     const response = await fetch('/api/citas/verificar-vencidas', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       }
     });
     
@@ -18,12 +24,20 @@ const verificarYActualizarCitasVencidas = async () => {
       const result = await response.json();
       console.log('✅ [AUTO-UPDATE] Citas actualizadas:', result.citasActualizadas);
       return result.citasActualizadas;
+    } else if (response.status === 404) {
+      console.warn('⚠️ [AUTO-UPDATE] Endpoint no implementado (404)');
+      return 0;
     } else {
       console.error('❌ [AUTO-UPDATE] Error al verificar citas:', response.status);
       return 0;
     }
   } catch (error) {
-    console.error('❌ [AUTO-UPDATE] Error:', error);
+    // Solo logear si no es un error de red común
+    if (error.name !== 'TypeError' || !error.message.includes('fetch')) {
+      console.error('❌ [AUTO-UPDATE] Error:', error);
+    } else {
+      console.warn('⚠️ [AUTO-UPDATE] Endpoint no disponible');
+    }
     return 0;
   }
 };
@@ -54,10 +68,16 @@ const limpiarObservaciones = (observaciones) => {
 };
 
 // Hook personalizado para usar en los componentes
-const useAutoUpdateCitas = () => {
+const useAutoUpdateCitas = (habilitado = false) => { // ✅ Parámetro para habilitar/deshabilitar
   const [ultimaActualizacion, setUltimaActualizacion] = useState(new Date());
+  const [activo, setActivo] = useState(habilitado);
   
   useEffect(() => {
+    if (!activo) {
+      console.log('🔇 [AUTO-UPDATE] Hook deshabilitado');
+      return;
+    }
+    
     // Verificar inmediatamente al cargar
     verificarYActualizarCitasVencidas();
     
@@ -71,9 +91,14 @@ const useAutoUpdateCitas = () => {
     }, 5 * 60 * 1000); // 5 minutos
     
     return () => clearInterval(intervalo);
-  }, []);
+  }, [activo]);
   
-  return { ultimaActualizacion, verificarCitas: verificarYActualizarCitasVencidas };
+  return { 
+    ultimaActualizacion, 
+    verificarCitas: verificarYActualizarCitasVencidas,
+    activo,
+    setActivo
+  };
 };
 
 export default useAutoUpdateCitas;

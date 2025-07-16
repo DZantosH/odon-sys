@@ -1,132 +1,346 @@
-/* Estilos para la vista simplificada de estudios */
-.estudios-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
+/* ================================
+   ESTILOS GENERALES DE LA SECCIÓN
+   ================================ */
 
-.estudio-card-simple {
-  background: white;
-  border-radius: 12px;
+.seccion-completa-radiografias {
+  width: 100%;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9ecef;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: #f8f9fa;
+  min-height: 400px;
 }
 
-.estudio-card-simple:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.estudio-header-simple {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.estudio-header-simple h4 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  flex: 1;
-  margin-right: 10px;
-}
-
-.estudio-info-simple {
-  margin-bottom: 20px;
-}
-
-.fecha-solicitud {
+.seccion-header-radiografias {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 4px solid #6f42c1;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #007bff;
 }
 
-.fecha-solicitud strong {
-  color: #495057;
-  font-size: 0.9rem;
-}
-
-.fecha-solicitud span {
-  color: #6f42c1;
-  font-weight: 500;
-}
-
-.estudio-actions {
+.seccion-header-radiografias h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c3e50;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.btn-ver-detalles {
+.header-actions-radiografias {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-recargar-radiografias {
   background: #6c757d;
   color: white;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-  flex: 1;
-  min-width: 120px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.btn-ver-detalles:hover {
+.btn-recargar-radiografias:hover {
   background: #5a6268;
+  transform: translateY(-1px);
 }
 
-.btn-ver-resultado {
-  background: #28a745;
+.btn-recargar-radiografias:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-accion-radiografias {
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-  flex: 1;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-accion-radiografias:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.3);
+}
+
+/* ================================
+   FORMULARIO INLINE
+   ================================ */
+
+.formulario-inline-radiografia {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  border-left: 4px solid #007bff;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.formulario-header {
+  margin-bottom: 24px;
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.formulario-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.formulario-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.form-inline {
+  width: 100%;
+}
+
+.form-grid-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.form-group-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group-inline.form-group-full {
+  grid-column: 1 / -1;
+}
+
+.form-group-inline label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-group-inline input,
+.form-group-inline select,
+.form-group-inline textarea {
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-group-inline input.input-principal,
+.form-group-inline select.input-principal {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.form-group-inline input:focus,
+.form-group-inline select:focus,
+.form-group-inline textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+.form-group-inline textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.form-actions-inline {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn-cancelar-inline {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
   min-width: 120px;
 }
 
-.btn-ver-resultado:hover {
-  background: #218838;
+.btn-cancelar-inline:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
 }
 
-.btn-subir-resultado {
-  background: #17a2b8;
+.btn-solicitar-inline {
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 12px 24px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.2s ease;
-  flex: 1;
-  min-width: 120px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 180px;
+  justify-content: center;
 }
 
-.btn-subir-resultado:hover {
-  background: #138496;
+.btn-solicitar-inline:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-1px);
 }
 
-/* Estados */
-.estado-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+.btn-solicitar-inline.loading {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.spinner-btn-inline {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   GRID DE TARJETAS COMPACTAS
+   ================================ */
+
+.radiografias-grid-compacto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.tarjeta-radiografia-compacta {
+  background: white;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 180px;
+}
+
+.tarjeta-radiografia-compacta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border-left-color: #0056b3;
+}
+
+.tarjeta-header-compacta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tarjeta-info-principal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tarjeta-titulo-compacta {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  line-height: 1.3;
+}
+
+.tarjeta-metadata {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.urgencia-badge {
+  padding: 3px 8px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+.estado-badge-compacta {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .estado-pendiente {
@@ -135,16 +349,17 @@
   border: 1px solid #ffeaa7;
 }
 
-.estado-en-proceso {
-  background: #d1ecf1;
-  color: #0c5460;
-  border: 1px solid #b8daff;
-}
-
-.estado-completado {
+.estado-completado,
+.estado-realizado {
   background: #d4edda;
   color: #155724;
   border: 1px solid #c3e6cb;
+}
+
+.estado-en-proceso {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
 }
 
 .estado-cancelado {
@@ -153,32 +368,343 @@
   border: 1px solid #f5c6cb;
 }
 
-/* Urgencia */
-.urgencia {
-  padding: 4px 8px;
-  border-radius: 12px;
+.tarjeta-info-secundaria {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.info-fecha-compacta,
+.info-zona,
+.info-centro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
+}
+
+.fecha-icon,
+.zona-icon,
+.centro-icon {
+  font-size: 0.9rem;
+}
+
+.fecha-texto,
+.zona-texto,
+.centro-texto {
   font-size: 0.8rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.tarjeta-acciones-compacta {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.btn-compacto {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-detalles-compacto {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-detalles-compacto:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.btn-imagen-compacto {
+  background: #28a745;
+  color: white;
+}
+
+.btn-imagen-compacto:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.btn-subir-compacto {
+  background: #17a2b8;
+  color: white;
+}
+
+.btn-subir-compacto:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+/* ================================
+   SECCIÓN VACÍA
+   ================================ */
+
+.seccion-vacia-radiografias {
+  background: white;
+  border-radius: 12px;
+  padding: 60px 40px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px dashed #dee2e6;
+  margin-top: 20px;
+}
+
+.icono-vacio-radiografias {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.seccion-vacia-radiografias h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+.seccion-vacia-radiografias p {
+  margin: 0 0 30px 0;
+  color: #6c757d;
+  line-height: 1.6;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-primera-accion-radiografias {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 123, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primera-accion-radiografias:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+}
+
+/* ================================
+   LOADING DE SECCIÓN
+   ================================ */
+
+.loading-section-radiografias {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.spinner-radiografias {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.loading-section-radiografias p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+/* ================================
+   MODALES
+   ================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-content.modal-grande {
+  max-width: 800px;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  padding: 24px;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
   font-weight: 600;
 }
 
-.urgencia-normal {
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: white;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.detalle-completo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detalle-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.detalle-titulo h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+}
+
+.detalle-grid-completo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.detalle-campo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.campo-icono {
+  font-size: 1.2rem;
+  min-width: 24px;
+}
+
+.campo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campo-info strong {
+  font-size: 0.8rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.campo-info span {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.urgencia-badge.urgencia-normal {
   background: #d4edda;
   color: #155724;
+  border: 1px solid #c3e6cb;
 }
 
-.urgencia-media {
+.urgencia-badge.urgencia-media {
   background: #fff3cd;
   color: #856404;
+  border: 1px solid #ffeaa7;
 }
 
-.urgencia-alta {
+.urgencia-badge.urgencia-alta {
   background: #f8d7da;
   color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
-.urgencia-emergencia {
+.urgencia-badge.urgencia-emergencia {
   background: #f8d7da;
   color: #721c24;
+  border: 1px solid #f5c6cb;
   animation: pulse 2s infinite;
 }
 
@@ -188,139 +714,457 @@
   100% { opacity: 1; }
 }
 
-/* Modal para detalles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+.detalle-seccion-completa {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.seccion-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.seccion-titulo strong {
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.seccion-icono {
+  font-size: 1.1rem;
+}
+
+.seccion-contenido {
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+.btn-ver-imagen-completo {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-ver-imagen-completo:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.modal-acciones {
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #2c3e50;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #6c757d;
-  padding: 5px;
-  border-radius: 4px;
-}
-
-.close-btn:hover {
-  background: #f8f9fa;
-  color: #495057;
-}
-
-.modal-body {
-  padding: 20px;
-}
-
-.detalle-estudio h3 {
-  margin-top: 0;
-  color: #6f42c1;
-}
-
-.detalles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
-}
-
-.detalle-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 4px solid #6f42c1;
-}
-
-.detalle-item strong {
-  color: #495057;
-  margin-right: 10px;
-}
-
-.detalle-item span {
-  color: #2c3e50;
-  font-weight: 500;
-}
-
-.detalle-item-full {
-  grid-column: 1 / -1;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border-left: 4px solid #6f42c1;
-}
-
-.detalle-item-full strong {
-  display: block;
-  color: #495057;
-  margin-bottom: 8px;
-}
-
-.detalle-item-full p {
-  margin: 0;
-  color: #2c3e50;
-  line-height: 1.5;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #e9ecef;
 }
 
-/* Responsive */
+.btn-cerrar-modal {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.btn-cerrar-modal:hover {
+  background: #5a6268;
+}
+
+/* Upload Area */
+.upload-area {
+  padding: 20px;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  background: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.file-label:hover {
+  background: #0056b3;
+}
+
+.file-selected {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+}
+
+.archivo-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.archivo-icono {
+  font-size: 1.5rem;
+}
+
+.archivo-detalles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.archivo-detalles strong {
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.archivo-detalles small {
+  color: #6c757d;
+  font-size: 0.8rem;
+}
+
+.tipos-archivo-permitidos {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.tipos-archivo-permitidos small {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.info-radiografia {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.info-radiografia h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+}
+
+.info-radiografia p {
+  margin: 0;
+  color: #6c757d;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-secundario {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-secundario:hover {
+  background: #5a6268;
+}
+
+.btn-primario {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-primario:hover {
+  background: #0056b3;
+}
+
+.btn-primario:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+/* ================================
+   NOTIFICACIONES
+   ================================ */
+
+.notification-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.success-notification {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid #e9ecef;
+  border-left: 6px solid #28a745;
+  z-index: 9999;
+  animation: notificationBounceIn 0.4s ease-out;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+@keyframes notificationBounceIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.notification-content {
+  padding: 24px 28px;
+  text-align: center;
+}
+
+.notification-content h4 {
+  margin: 0 0 12px 0;
+  color: #28a745;
+  font-size: 1.3rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.notification-content h4::before {
+  content: "✅";
+  font-size: 1.5rem;
+}
+
+.notification-content p {
+  margin: 0 0 20px 0;
+  color: #495057;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.notification-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn-close-notification {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: 150px;
+}
+
+.btn-close-notification:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.btn-recargar-notification {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: 150px;
+}
+
+.btn-recargar-notification:hover {
+  background: #138496;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+}
+
+/* ================================
+   RESPONSIVO
+   ================================ */
+
 @media (max-width: 768px) {
-  .estudios-grid {
-    grid-template-columns: 1fr;
+  .seccion-completa-radiografias {
+    padding: 16px;
   }
   
-  .estudio-actions {
+  .seccion-header-radiografias {
     flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+    text-align: center;
+    padding: 16px;
   }
   
-  .btn-ver-detalles,
-  .btn-ver-resultado,
-  .btn-subir-resultado {
-    min-width: auto;
+  .header-actions-radiografias {
+    justify-content: center;
+    flex-wrap: wrap;
   }
   
-  .detalles-grid {
+  .formulario-inline-radiografia {
+    padding: 20px;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .form-actions-inline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .radiografias-grid-compacto {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  
+  .tarjeta-radiografia-compacta {
+    padding: 16px;
+    min-height: 160px;
+  }
+  
+  .tarjeta-acciones-compacta {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .btn-compacto {
+    padding: 10px;
+    font-size: 0.85rem;
+  }
+  
+  .seccion-vacia-radiografias {
+    padding: 40px 20px;
+  }
+  
+  .detalle-grid-completo {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 480px) {
+  .seccion-completa-radiografias {
+    padding: 12px;
+  }
+  
+  .formulario-inline-radiografia {
+    padding: 16px;
+  }
+  
+  .formulario-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .radiografias-grid-compacto {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .tarjeta-titulo-compacta {
+    font-size: 0.95rem;
+  }
+  
+  .btn-compacto {
+    font-size: 0.8rem;
+    padding: 8px;
+  }
+  
+  .form-group-inline input,
+  .form-group-inline select,
+  .form-group-inline textarea {
+    padding: 10px 14px;
+  }
+  
+  .modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .modal-header,
+  .modal-body {
+    padding: 16px;
+  }
+}
+
+/* ================================
+   ANIMACIONES ADICIONALES
+   ================================ */
+
+.tarjeta-radiografia-compacta {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.btn-compacto:active {
+  transform: translateY(0) !important;
+  transition: none;
 }

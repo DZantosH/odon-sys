@@ -9,7 +9,7 @@ const fs = require('fs');
 // Configurar multer para subida de imágenes
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadPath = 'uploads/radiografias/';
+    const uploadPath = path.join(__dirname, '../uploads/radiografias/');
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -24,14 +24,16 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|dcm|dicom/;
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|dcm|dicom/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype) || file.mimetype === 'application/dicom';
+    const mimetype = allowedTypes.test(file.mimetype) || 
+                     file.mimetype === 'application/dicom' || 
+                     file.mimetype === 'application/pdf';
     
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Solo se permiten imágenes y archivos DICOM'));
+      cb(new Error('Solo se permiten imágenes, PDFs y archivos DICOM'));
     }
   },
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
@@ -147,21 +149,103 @@ router.post('/', async (req, res) => {
 });
 
 // POST /api/radiografias/:id/imagen - Subir imagen de radiografía
-router.post('/:id/imagen', upload.single('imagen'), async (req, res) => {
+router.post('/:id/imagen', upload.fields([
+  { name: 'imagen', maxCount: 1 },
+  { name: 'archivo', maxCount: 1 }
+]), async (req, res) => {
   try {
     const radiografiaId = req.params.id;
     
-    if (!req.file) {
+    const file = req.files?.imagen?.[0] || req.files?.archivo?.[0];
+    
+    console.log('📤 Intentando subir imagen para radiografía:', radiografiaId);
+    console.log('📁 Archivo recibido:', file ? file.filename : 'No hay archivo');
+    console.log('📋 Files object:', req.files);
+    console.log('📋 Body recibido:', req.body);
+    
+    if (!file) {
       return res.status(400).json({
+        success: false,
         error: 'No se proporcionó imagen',
         message: 'Debe seleccionar un archivo de imagen'
       });
     }
 
-    console.log('📤 Subiendo imagen para radiografía:', radiografiaId);
-    console.log('📁 Archivo:', req.file.filename);
+    const archivoPath = `/uploads/radiografias/${file.filename}`;
+    const fechaRealizacion = req.body.fecha_realizacion || new Date().toISOString().split('T')[0];
 
-    const archivoPath = `/uploads/radiografias/${req.file.filename}`;
+    console.log('💾 Guardando en BD:', {
+      archivo: archivoPath,
+      fecha: fechaRealizacion,
+      radiografia_id: radiografiaId
+    });
+
+    const query = `
+      UPDATE radiografias 
+      SET 
+        archivo_imagen = ?,
+        fecha_realizacion = ?,
+        estado = 'completada',
+        updated_at = NOW()
+      WHERE id = ? AND activo = 1
+    `;
+
+    const [result] = await pool.execute(query, [archivoPath, fechaRealizacion, radiografiaId]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Radiografía no encontrada',
+        message: `No se encontró la radiografía con ID ${radiografiaId}`
+      });
+    }
+
+    // Obtener la radiografía actualizada
+    const selectQuery = 'SELECT * FROM radiografias WHERE id = ?';
+    const [selectResults] = await pool.execute(selectQuery, [radiografiaId]);
+
+    console.log('✅ Imagen subida y BD actualizada exitosamente');
+    res.json({
+      success: true,
+      message: 'Imagen subida exitosamente',
+      radiografia: selectResults[0],
+      archivo: archivoPath,
+      archivo_url: `${req.protocol}://${req.get('host')}${archivoPath}`
+    });
+
+  } catch (error) {
+    console.error('❌ Error al subir imagen:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al subir imagen',
+      message: error.message
+    });
+  }
+});
+
+// ✅ NUEVO: POST /api/radiografias/:id/archivo - Endpoint alternativo
+router.post('/:id/archivo', upload.fields([
+  { name: 'imagen', maxCount: 1 },
+  { name: 'archivo', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const radiografiaId = req.params.id;
+    
+    const file = req.files?.imagen?.[0] || req.files?.archivo?.[0];
+    
+    console.log('📤 [ARCHIVO] Intentando subir archivo para radiografía:', radiografiaId);
+    console.log('📁 [ARCHIVO] Archivo recibido:', file ? file.filename : 'No hay archivo');
+    console.log('📋 [ARCHIVO] Files object:', req.files);
+    
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No se proporcionó archivo',
+        message: 'Debe seleccionar un archivo'
+      });
+    }
+
+    const archivoPath = `/uploads/radiografias/${file.filename}`;
     const fechaRealizacion = req.body.fecha_realizacion || new Date().toISOString().split('T')[0];
 
     const query = `
@@ -178,6 +262,7 @@ router.post('/:id/imagen', upload.single('imagen'), async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
+        success: false,
         error: 'Radiografía no encontrada',
         message: `No se encontró la radiografía con ID ${radiografiaId}`
       });
@@ -187,17 +272,20 @@ router.post('/:id/imagen', upload.single('imagen'), async (req, res) => {
     const selectQuery = 'SELECT * FROM radiografias WHERE id = ?';
     const [selectResults] = await pool.execute(selectQuery, [radiografiaId]);
 
-    console.log('✅ Imagen subida exitosamente');
+    console.log('✅ [ARCHIVO] Archivo subido y BD actualizada exitosamente');
     res.json({
-      message: 'Imagen subida exitosamente',
+      success: true,
+      message: 'Archivo subido exitosamente',
       radiografia: selectResults[0],
-      archivo: archivoPath
+      archivo: archivoPath,
+      archivo_url: `${req.protocol}://${req.get('host')}${archivoPath}`
     });
 
   } catch (error) {
-    console.error('❌ Error al subir imagen:', error);
+    console.error('❌ [ARCHIVO] Error al subir archivo:', error);
     res.status(500).json({
-      error: 'Error al subir imagen',
+      success: false,
+      error: 'Error al subir archivo',
       message: error.message
     });
   }

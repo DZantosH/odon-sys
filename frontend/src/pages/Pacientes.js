@@ -5,6 +5,7 @@ import { useAuth } from '../services/AuthContext';
 import ModalEditarPaciente from '../components/ModalEditarPaciente';
 import ModalRegistrarPaciente from '../components/ModalRegistrarPaciente';
 import { ConfirmModal } from '../components/modals/ModalSystem';
+import { PacienteRegistradoModal } from '../components/modals/AlertaSystem'; // ✅ NUEVO IMPORT
 import '../css/Pacientes.css';
 
 const Pacientes = () => {
@@ -26,6 +27,28 @@ const Pacientes = () => {
   // Estados para modal de confirmación
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [pacienteParaConvertir, setPacienteParaConvertir] = useState(null);
+
+  // ✅ NUEVO ESTADO PARA MODAL DE ÉXITO
+  const [modalExito, setModalExito] = useState({
+    isOpen: false,
+    pacienteData: {}
+  });
+
+  // ✅ FUNCIÓN PARA MOSTRAR MODAL DE ÉXITO
+  const handleMostrarExito = (pacienteData) => {
+    setModalExito({
+      isOpen: true,
+      pacienteData: pacienteData
+    });
+  };
+
+  // ✅ FUNCIÓN PARA CERRAR MODAL DE ÉXITO
+  const handleCerrarExito = () => {
+    setModalExito({
+      isOpen: false,
+      pacienteData: {}
+    });
+  };
 
   // Función para obtener headers con autenticación
   const getAuthHeaders = () => {
@@ -155,87 +178,87 @@ const Pacientes = () => {
   }, [calcularEdad, user]);
 
   // FUNCIÓN PARA CONVERTIR PACIENTE TEMPORAL A PERMANENTE
-const convertirPacientePermanente = async (paciente) => {
-  try {
-    setAccionEnProceso(`converting-${paciente.id}`);
-    
-    // Generar nueva matrícula para el paciente que se convierte a activo
-    const nuevaMatricula = generarMatriculaNueva(paciente.id);
-    
-    const apiUrl = buildApiUrl(`/pacientes/${paciente.id}/convertir-activo`);
-    
-    // Enviar datos para la conversión incluyendo la nueva matrícula
-    const datosConversion = {
-      estado: 'Activo',
-      matricula: nuevaMatricula,
-      nombre: paciente.nombre,
-      apellido_paterno: paciente.apellido_paterno,
-      apellido_materno: paciente.apellido_materno,
-      fecha_nacimiento: paciente.fecha_nacimiento,
-      telefono: paciente.telefono,
-      sexo: paciente.sexo
-    };
-    
-    const response = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(datosConversion)
-    });
-          
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Error en conversión:', errorText);
-      throw new Error(`Error al convertir paciente: ${response.statusText}`);
+  const convertirPacientePermanente = async (paciente) => {
+    try {
+      setAccionEnProceso(`converting-${paciente.id}`);
+      
+      // Generar nueva matrícula para el paciente que se convierte a activo
+      const nuevaMatricula = generarMatriculaNueva(paciente.id);
+      
+      const apiUrl = buildApiUrl(`/pacientes/${paciente.id}/convertir-activo`);
+      
+      // Enviar datos para la conversión incluyendo la nueva matrícula
+      const datosConversion = {
+        estado: 'Activo',
+        matricula: nuevaMatricula,
+        nombre: paciente.nombre,
+        apellido_paterno: paciente.apellido_paterno,
+        apellido_materno: paciente.apellido_materno,
+        fecha_nacimiento: paciente.fecha_nacimiento,
+        telefono: paciente.telefono,
+        sexo: paciente.sexo
+      };
+      
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(datosConversion)
+      });
+            
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error en conversión:', errorText);
+        throw new Error(`Error al convertir paciente: ${response.statusText}`);
+      }
+      
+      const resultado = await response.json();
+      
+      // ❌ ELIMINAR ALERT DE ÉXITO
+      // alert(`✅ Paciente convertido exitosamente!...`);
+      console.log('✅ Paciente convertido exitosamente:', resultado);
+      
+      // Recargar lista de pacientes
+      await cargarPacientes();
+      
+    } catch (error) {
+      console.error('❌ Error al convertir paciente:', error);
+      // ❌ ELIMINAR ALERT DE ERROR TAMBIÉN
+      // alert(`❌ Error al convertir paciente: ${error.message}`);
+    } finally {
+      setAccionEnProceso(null);
     }
-    
-    const resultado = await response.json();
-    
-    // ❌ ELIMINAR ALERT DE ÉXITO
-    // alert(`✅ Paciente convertido exitosamente!...`);
-    console.log('✅ Paciente convertido exitosamente:', resultado);
-    
-    // Recargar lista de pacientes
-    await cargarPacientes();
-    
-  } catch (error) {
-    console.error('❌ Error al convertir paciente:', error);
-    // ❌ ELIMINAR ALERT DE ERROR TAMBIÉN
-    // alert(`❌ Error al convertir paciente: ${error.message}`);
-  } finally {
-    setAccionEnProceso(null);
-  }
-};
+  };
 
   // FUNCIÓN PARA ABRIR MODAL DE EDITAR PACIENTE
- const handleEditarPaciente = async (paciente) => {
-  // Si ya tiene todos los campos, lo usamos directamente
-  if (paciente.rfc && paciente.religion && paciente.numero_seguridad_social !== undefined) {
-    setPacienteSeleccionado(paciente);
-    setModalEditarOpen(true);
-    return;
-  }
-
-  // 🔄 Cargar desde la API si faltan campos
-  try {
-    const response = await fetch(buildApiUrl(`/pacientes/${paciente.id}`), {
-      headers: getAuthHeaders()
-    });
-
-    if (response.ok) {
-      const pacienteCompleto = await response.json();
-      setPacienteSeleccionado(pacienteCompleto);
+  const handleEditarPaciente = async (paciente) => {
+    // Si ya tiene todos los campos, lo usamos directamente
+    if (paciente.rfc && paciente.religion && paciente.numero_seguridad_social !== undefined) {
+      setPacienteSeleccionado(paciente);
       setModalEditarOpen(true);
-    } else {
-      // ❌ ELIMINAR ALERT
-      // alert('❌ Error al obtener datos completos del paciente');
-      console.error('❌ Error al obtener datos completos del paciente');
+      return;
     }
-  } catch (error) {
-    console.error('❌ Error al cargar paciente:', error);
-    // ❌ ELIMINAR ALERT
-    // alert('❌ Error de conexión al obtener datos del paciente');
-  }
-};
+
+    // 🔄 Cargar desde la API si faltan campos
+    try {
+      const response = await fetch(buildApiUrl(`/pacientes/${paciente.id}`), {
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const pacienteCompleto = await response.json();
+        setPacienteSeleccionado(pacienteCompleto);
+        setModalEditarOpen(true);
+      } else {
+        // ❌ ELIMINAR ALERT
+        // alert('❌ Error al obtener datos completos del paciente');
+        console.error('❌ Error al obtener datos completos del paciente');
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar paciente:', error);
+      // ❌ ELIMINAR ALERT
+      // alert('❌ Error de conexión al obtener datos del paciente');
+    }
+  };
 
   // Funciones para modal de confirmación
   const handleConvertirClick = (paciente) => {
@@ -310,7 +333,7 @@ const convertirPacientePermanente = async (paciente) => {
     } catch (error) {
     }
     
-}, [cargarPacientes]);
+  }, [cargarPacientes]);
 
   // FUNCIÓN CORREGIDA PARA VER HISTORIAL CLÍNICO
   const verHistorialClinico = useCallback((pacienteId) => {
@@ -346,105 +369,105 @@ const convertirPacientePermanente = async (paciente) => {
         alert('Error al navegar al historial del paciente');
       }
     }
-      }, [navigate, pacientes]);
+  }, [navigate, pacientes]);
 
   // Función para filtrar y ordenar pacientes
-const filtrarYOrdenarPacientes = useCallback(() => {
-  let resultado = [...pacientes];
+  const filtrarYOrdenarPacientes = useCallback(() => {
+    let resultado = [...pacientes];
 
-  // Aplicar filtro de búsqueda
-  if (busqueda.trim()) {
-    const terminoBusqueda = busqueda.toLowerCase().trim();
-    resultado = resultado.filter(paciente => {
-      const nombreCompleto = `${paciente.nombre || ''} ${paciente.apellido_paterno || ''} ${paciente.apellido_materno || ''}`.toLowerCase();
-      
-      return (
-        nombreCompleto.includes(terminoBusqueda) ||
-        (paciente.telefono && paciente.telefono.includes(terminoBusqueda)) ||
-        (paciente.rfc && paciente.rfc.toLowerCase().includes(terminoBusqueda)) ||
-        (paciente.matricula && paciente.matricula.toLowerCase().includes(terminoBusqueda))
-      );
-    });
-  }
-
-      // ✅ APLICAR ORDENAMIENTO CORREGIDO
-  resultado.sort((a, b) => {
-    switch (ordenPor) {
-      case 'nombre':
-        // ✅ Ordenar por nombre alfabéticamente (A-Z)
-        const nombreA = (a.nombre || '').toLowerCase().trim();
-        const nombreB = (b.nombre || '').toLowerCase().trim();
-        return nombreA.localeCompare(nombreB, 'es', { numeric: true });
-
-      case 'apellido':
-        // ✅ Ordenar por apellido paterno alfabéticamente (A-Z)
-        const apellidoA = (a.apellido_paterno || '').toLowerCase().trim();
-        const apellidoB = (b.apellido_paterno || '').toLowerCase().trim();
-        return apellidoA.localeCompare(apellidoB, 'es', { numeric: true });
-
-      case 'edad':
-        // ✅ Ordenar por edad de menor a mayor
-        const edadA = typeof a.edad === 'number' ? a.edad : 
-                     (a.edad === 'N/A' ? 999 : parseInt(a.edad) || 0);
-        const edadB = typeof b.edad === 'number' ? b.edad : 
-                     (b.edad === 'N/A' ? 999 : parseInt(b.edad) || 0);
+    // Aplicar filtro de búsqueda
+    if (busqueda.trim()) {
+      const terminoBusqueda = busqueda.toLowerCase().trim();
+      resultado = resultado.filter(paciente => {
+        const nombreCompleto = `${paciente.nombre || ''} ${paciente.apellido_paterno || ''} ${paciente.apellido_materno || ''}`.toLowerCase();
         
-        // Los N/A van al final
-        if (a.edad === 'N/A' && b.edad !== 'N/A') return 1;
-        if (b.edad === 'N/A' && a.edad !== 'N/A') return -1;
-        if (a.edad === 'N/A' && b.edad === 'N/A') return 0;
-        
-        return edadA - edadB;
-
-      case 'matricula':
-        // ✅ Ordenar por matrícula - último dígito de menor a mayor
-        
-        // Función para extraer el último dígito de la matrícula
-        const getUltimoDigitoMatricula = (matricula) => {
-          if (!matricula) return 999; // Sin matrícula van al final
-          
-          // Buscar patrón like "PAC190725/3" y extraer el último número
-          const match = matricula.match(/\/(\d+)$/);
-          if (match) {
-            return parseInt(match[1]);
-          }
-          
-          // Si no encuentra el patrón, intentar extraer el último dígito
-          const ultimoDigito = matricula.match(/(\d)(?!.*\d)/);
-          return ultimoDigito ? parseInt(ultimoDigito[1]) : 999;
-        };
-        
-        const digitoA = getUltimoDigitoMatricula(a.matricula);
-        const digitoB = getUltimoDigitoMatricula(b.matricula);
-        
-        // Sin matrícula van al final
-        if (!a.matricula && !b.matricula) return 0;
-        if (!a.matricula) return 1;
-        if (!b.matricula) return -1;
-        
-        return digitoA - digitoB;
-
-      case 'tipo':
-        // ✅ Ordenar por tipo: Activos primero, luego Temporales
-        const tipoA = a.tipo_paciente || (a.es_temporal ? 'Temporal' : 'Activo');
-        const tipoB = b.tipo_paciente || (b.es_temporal ? 'Temporal' : 'Activo');
-        
-        // Activos primero (A viene antes que T)
-        if (tipoA === 'Activo' && tipoB === 'Temporal') return -1;
-        if (tipoA === 'Temporal' && tipoB === 'Activo') return 1;
-        
-        // Si son del mismo tipo, ordenar alfabéticamente por nombre
-        const nombreA2 = (a.nombre || '').toLowerCase().trim();
-        const nombreB2 = (b.nombre || '').toLowerCase().trim();
-        return nombreA2.localeCompare(nombreB2, 'es', { numeric: true });
-
-      default:
-        return 0;
+        return (
+          nombreCompleto.includes(terminoBusqueda) ||
+          (paciente.telefono && paciente.telefono.includes(terminoBusqueda)) ||
+          (paciente.rfc && paciente.rfc.toLowerCase().includes(terminoBusqueda)) ||
+          (paciente.matricula && paciente.matricula.toLowerCase().includes(terminoBusqueda))
+        );
+      });
     }
-  });
+
+    // ✅ APLICAR ORDENAMIENTO CORREGIDO
+    resultado.sort((a, b) => {
+      switch (ordenPor) {
+        case 'nombre':
+          // ✅ Ordenar por nombre alfabéticamente (A-Z)
+          const nombreA = (a.nombre || '').toLowerCase().trim();
+          const nombreB = (b.nombre || '').toLowerCase().trim();
+          return nombreA.localeCompare(nombreB, 'es', { numeric: true });
+
+        case 'apellido':
+          // ✅ Ordenar por apellido paterno alfabéticamente (A-Z)
+          const apellidoA = (a.apellido_paterno || '').toLowerCase().trim();
+          const apellidoB = (b.apellido_paterno || '').toLowerCase().trim();
+          return apellidoA.localeCompare(apellidoB, 'es', { numeric: true });
+
+        case 'edad':
+          // ✅ Ordenar por edad de menor a mayor
+          const edadA = typeof a.edad === 'number' ? a.edad : 
+                       (a.edad === 'N/A' ? 999 : parseInt(a.edad) || 0);
+          const edadB = typeof b.edad === 'number' ? b.edad : 
+                       (b.edad === 'N/A' ? 999 : parseInt(b.edad) || 0);
+          
+          // Los N/A van al final
+          if (a.edad === 'N/A' && b.edad !== 'N/A') return 1;
+          if (b.edad === 'N/A' && a.edad !== 'N/A') return -1;
+          if (a.edad === 'N/A' && b.edad === 'N/A') return 0;
+          
+          return edadA - edadB;
+
+        case 'matricula':
+          // ✅ Ordenar por matrícula - último dígito de menor a mayor
+          
+          // Función para extraer el último dígito de la matrícula
+          const getUltimoDigitoMatricula = (matricula) => {
+            if (!matricula) return 999; // Sin matrícula van al final
+            
+            // Buscar patrón like "PAC190725/3" y extraer el último número
+            const match = matricula.match(/\/(\d+)$/);
+            if (match) {
+              return parseInt(match[1]);
+            }
+            
+            // Si no encuentra el patrón, intentar extraer el último dígito
+            const ultimoDigito = matricula.match(/(\d)(?!.*\d)/);
+            return ultimoDigito ? parseInt(ultimoDigito[1]) : 999;
+          };
+          
+          const digitoA = getUltimoDigitoMatricula(a.matricula);
+          const digitoB = getUltimoDigitoMatricula(b.matricula);
+          
+          // Sin matrícula van al final
+          if (!a.matricula && !b.matricula) return 0;
+          if (!a.matricula) return 1;
+          if (!b.matricula) return -1;
+          
+          return digitoA - digitoB;
+
+        case 'tipo':
+          // ✅ Ordenar por tipo: Activos primero, luego Temporales
+          const tipoA = a.tipo_paciente || (a.es_temporal ? 'Temporal' : 'Activo');
+          const tipoB = b.tipo_paciente || (b.es_temporal ? 'Temporal' : 'Activo');
+          
+          // Activos primero (A viene antes que T)
+          if (tipoA === 'Activo' && tipoB === 'Temporal') return -1;
+          if (tipoA === 'Temporal' && tipoB === 'Activo') return 1;
+          
+          // Si son del mismo tipo, ordenar alfabéticamente por nombre
+          const nombreA2 = (a.nombre || '').toLowerCase().trim();
+          const nombreB2 = (b.nombre || '').toLowerCase().trim();
+          return nombreA2.localeCompare(nombreB2, 'es', { numeric: true });
+
+        default:
+          return 0;
+      }
+    });
 
     setPacientesFiltrados(resultado);
-}, [busqueda, pacientes, ordenPor]);
+  }, [busqueda, pacientes, ordenPor]);
 
   // useEffect para cargar datos iniciales
   useEffect(() => {
@@ -700,11 +723,11 @@ const filtrarYOrdenarPacientes = useCallback(() => {
 
       {/* Modal para editar paciente */}
       <ModalEditarPaciente
-  isOpen={modalEditarOpen}
-  onClose={() => setModalEditarOpen(false)}
-  paciente={pacienteSeleccionado}
-  onPacienteActualizado={handlePacienteActualizado}
-/>
+        isOpen={modalEditarOpen}
+        onClose={() => setModalEditarOpen(false)}
+        paciente={pacienteSeleccionado}
+        onPacienteActualizado={handlePacienteActualizado}
+      />
 
       {/* Modal para registrar nuevo paciente */}
       <ModalRegistrarPaciente
@@ -716,6 +739,7 @@ const filtrarYOrdenarPacientes = useCallback(() => {
           cargarPacientes();
           setModalRegistrarOpen(false);
         }}
+        onMostrarExito={handleMostrarExito} // ✅ NUEVO PROP
       />
 
       {/* Modal de confirmación para convertir paciente */}
@@ -732,6 +756,15 @@ const filtrarYOrdenarPacientes = useCallback(() => {
         cancelText="Cancelar"
         type="warning"
         position="top-left"
+      />
+
+      {/* ✅ MODAL DE ÉXITO - POSICIÓN SUPERIOR DERECHA */}
+      <PacienteRegistradoModal
+        isOpen={modalExito.isOpen}
+        onClose={handleCerrarExito}
+        pacienteData={modalExito.pacienteData}
+        autoClose={true}
+        autoCloseDelay={3000} // ✅ CAMBIO A 3 SEGUNDOS
       />
     </div>
   );

@@ -3,30 +3,156 @@ import { DateTime } from 'luxon';
 import { FaTooth, FaBell, FaQuestionCircle, FaUserCircle, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { MdDashboard } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
-import BaseModal from '../components/modals/ModalSystem'; // ✅ IMPORTAR EL MODAL BASE PARA CONTROL DE POSICIÓN
+import BaseModal from '../components/modals/ModalSystem';
 import '../css/PanelPrincipal.css';
 
 const Navbar = () => {
   const [horaActual, setHoraActual] = useState('');
   const [fechaActual, setFechaActual] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false); // ✅ ESTADO PARA MODAL
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  
+  // ✅ ESTADO PARA DATOS DEL USUARIO AUTENTICADO
+  const [userData, setUserData] = useState({
+    nombre: '',
+    email: '',
+    rol: '',
+    iniciales: '',
+    nombreCompleto: ''
+  });
+  
   const navigate = useNavigate();
+
+  // ✅ FUNCIÓN PARA OBTENER EL TÍTULO DE PÁGINA ADAPTATIVO
+  const getPageTitle = () => {
+    if (windowWidth < 480) {
+      return null; // No mostrar en móviles muy pequeños
+    } else if (windowWidth < 600) {
+      return "Dashboard";
+    } else if (windowWidth < 900) {
+      return "Panel";
+    } else {
+      return "Panel de Control";
+    }
+  };
+
+  // ✅ FUNCIÓN PARA MANEJAR EL RESIZE DE VENTANA
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // ✅ FUNCIÓN PARA CARGAR DATOS DEL USUARIO
+  const cargarDatosUsuario = () => {
+    try {
+      const userDataFromStorage = localStorage.getItem('userData');
+      const userFromStorage = localStorage.getItem('user');
+      
+      let datosUsuario = null;
+      
+      if (userDataFromStorage) {
+        datosUsuario = JSON.parse(userDataFromStorage);
+      } else if (userFromStorage) {
+        datosUsuario = JSON.parse(userFromStorage);
+      }
+      
+      if (datosUsuario) {
+        console.log('📋 Datos del usuario encontrados:', datosUsuario);
+        
+        const nombre = datosUsuario.nombre || datosUsuario.first_name || datosUsuario.firstName || '';
+        const apellido = datosUsuario.apellido || datosUsuario.last_name || datosUsuario.lastName || '';
+        const email = datosUsuario.email || datosUsuario.correo || datosUsuario.correo_electronico || '';
+        const rol = datosUsuario.rol || datosUsuario.role || datosUsuario.tipo_usuario || 'Usuario';
+        
+        const nombreCompleto = `${nombre} ${apellido}`.trim() || email.split('@')[0] || 'Usuario';
+        const iniciales = crearIniciales(nombre, apellido, email);
+        const rolFormateado = formatearRol(rol);
+        
+        setUserData({
+          nombre: nombreCompleto,
+          email: email,
+          rol: rolFormateado,
+          iniciales: iniciales,
+          nombreCompleto: nombreCompleto
+        });
+        
+      } else {
+        console.warn('⚠️ No se encontraron datos del usuario en localStorage');
+        setUserData({
+          nombre: 'Usuario',
+          email: 'usuario@sistema.com',
+          rol: 'USUARIO',
+          iniciales: 'U',
+          nombreCompleto: 'Usuario'
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al cargar datos del usuario:', error);
+      setUserData({
+        nombre: 'Usuario',
+        email: 'usuario@sistema.com',
+        rol: 'USUARIO',
+        iniciales: 'U',
+        nombreCompleto: 'Usuario'
+      });
+    }
+  };
+
+  // ✅ FUNCIÓN PARA CREAR INICIALES
+  const crearIniciales = (nombre, apellido, email) => {
+    if (nombre && apellido) {
+      return `${nombre.charAt(0).toUpperCase()}${apellido.charAt(0).toUpperCase()}`;
+    } else if (nombre) {
+      return nombre.charAt(0).toUpperCase();
+    } else if (email) {
+      return email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
+
+  // ✅ FUNCIÓN PARA FORMATEAR ROL
+  const formatearRol = (rol) => {
+    if (!rol) return 'USUARIO';
+    
+    const rolFormateado = rol.toString().toUpperCase().replace(/_/g, ' ');
+    
+    const mapeoRoles = {
+      'ADMIN': 'ADMINISTRADOR',
+      'ADMINISTRATOR': 'ADMINISTRADOR',
+      'DOCTOR': 'DOCTOR',
+      'DENTIST': 'DENTISTA',
+      'ODONTOLOGO': 'ODONTÓLOGO',
+      'ASSISTANT': 'ASISTENTE',
+      'SECRETARY': 'SECRETARIO/A',
+      'RECEPCIONISTA': 'RECEPCIONISTA',
+      'USER': 'USUARIO'
+    };
+    
+    return mapeoRoles[rolFormateado] || rolFormateado;
+  };
+
+  // ✅ CARGAR DATOS DEL USUARIO AL MONTAR EL COMPONENTE
+  useEffect(() => {
+    cargarDatosUsuario();
+  }, []);
 
   useEffect(() => {
     const actualizarHora = () => {
       const cdmxNow = DateTime.now().setZone('America/Mexico_City');
-
-      const hora = cdmxNow.toFormat('HH:mm'); // formato 24h
+      const hora = cdmxNow.toFormat('HH:mm');
       const fecha = cdmxNow.setLocale('es').toFormat("cccc, dd 'de' LLLL 'de' yyyy");
-
       setHoraActual(hora);
       setFechaActual(capitalizeWords(fecha));
     };
 
     actualizarHora();
     const intervalo = setInterval(actualizarHora, 1000);
-
     return () => clearInterval(intervalo);
   }, []);
 
@@ -45,53 +171,38 @@ const Navbar = () => {
   const capitalizeWords = (str) =>
     str.replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // NUEVA FUNCIÓN: Abrir Manual de Usuario
   const handleAbrirManualUsuario = () => {
-    // Navegar usando React Router en lugar de window.open
     navigate('/ManualUsuario');
   };
 
-  // Toggle menú de usuario
   const toggleUserMenu = () => {
     setShowUserMenu(!showUserMenu);
   };
 
-  // Funciones del menú de usuario
   const handleProfile = () => {
     console.log('Abrir perfil de usuario');
     setShowUserMenu(false);
-    // Navegar al perfil usando React Router
     navigate('/perfil');
   };
 
   const handleSettings = () => {
     console.log('Abrir configuración');
     setShowUserMenu(false);
-    // Navegar a configuración usando React Router
     navigate('/configuracion');
   };
 
-  // ✅ FUNCIÓN SIMPLIFICADA PARA ABRIR MODAL
   const handleLogoutClick = () => {
-    setShowUserMenu(false); // Cerrar menú desplegable
-    setShowLogoutModal(true); // Abrir modal moderno
+    setShowUserMenu(false);
+    setShowLogoutModal(true);
   };
 
-  // ✅ FUNCIÓN PARA CONFIRMAR LOGOUT
   const confirmarLogout = () => {
     try {
       console.log('🔓 Iniciando proceso de logout...');
       
-      // 1. Limpiar TODOS los datos de autenticación
       const keysToRemove = [
-        'token', 
-        'userData', 
-        'user', 
-        'authToken', 
-        'accessToken',
-        'refreshToken',
-        'userSession',
-        'loginData'
+        'token', 'userData', 'user', 'authToken', 'accessToken',
+        'refreshToken', 'userSession', 'loginData'
       ];
       
       keysToRemove.forEach(key => {
@@ -99,7 +210,6 @@ const Navbar = () => {
         sessionStorage.removeItem(key);
       });
       
-      // 2. Limpiar completamente el storage (opcional pero más seguro)
       try {
         localStorage.clear();
         sessionStorage.clear();
@@ -108,31 +218,25 @@ const Navbar = () => {
       }
       
       console.log('✅ Datos de sesión limpiados exitosamente');
-      
-      // 3. Forzar redirección inmediata al login/home
       console.log('🔄 Redirigiendo al login...');
       
-      // Determinar la URL de login
-      const loginUrl = window.location.origin + '/'; // Ruta raíz
-      
-      // Usar replace para evitar que el usuario pueda volver atrás
+      const loginUrl = window.location.origin + '/';
       window.location.replace(loginUrl);
       
     } catch (error) {
       console.error('❌ Error durante el logout:', error);
-      
-      // Fallback de emergencia: limpiar todo y recargar
       try {
         localStorage.clear();
         sessionStorage.clear();
         window.location.href = '/';
       } catch (fallbackError) {
         console.error('❌ Error en fallback:', fallbackError);
-        // Último recurso: solo recargar la página
         window.location.reload();
       }
     }
   };
+
+  const pageTitle = getPageTitle();
 
   return (
     <>
@@ -141,28 +245,38 @@ const Navbar = () => {
           <div className="navbar-brand">
             <span className="brand-icon">🦷</span>
             <div className="brand-info">
-              <div className="brand-name">Odont-SISTEMA</div>
-              <div className="brand-subtitle">Sistema Odontológico</div>
+              <div className="brand-name">
+                {windowWidth < 600 ? 'Odont-SIS' : 'Odont-SISTEMA'}
+              </div>
+              {windowWidth > 768 && (
+                <div className="brand-subtitle">Sistema Odontológico</div>
+              )}
             </div>
           </div>
           
-          <div className="navbar-divider"></div>
-          
-          <div className="navbar-page">
-            <span className="page-icon">📊</span>
-            <span className="page-title">Panel de Control</span>
-          </div>
+          {pageTitle && (
+            <>
+              <div className="navbar-divider"></div>
+              <div className="navbar-page">
+                <span className="page-icon">📊</span>
+                <span className="page-title">{pageTitle}</span>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="navbar-center">
-          <div className="datetime-info">
-            <div className="time-display">
-              <span className="time-icon">🕐</span>
-              <span className="time-text">{horaActual}</span>
+        {/* ✅ SOLO MOSTRAR CENTRO EN PANTALLAS GRANDES */}
+        {windowWidth > 768 && (
+          <div className="navbar-center">
+            <div className="datetime-info">
+              <div className="time-display">
+                <span className="time-icon">🕐</span>
+                <span className="time-text">{horaActual}</span>
+              </div>
+              <div className="date-display">{fechaActual}</div>
             </div>
-            <div className="date-display">{fechaActual}</div>
           </div>
-        </div>
+        )}
 
         <div className="navbar-right">
           <div className="navbar-actions">
@@ -170,62 +284,61 @@ const Navbar = () => {
               <span>🔔</span>
               <div className="notification-badge">3</div>
             </button>
-            {/* BOTÓN DE AYUDA CON FUNCIONALIDAD */}
-            <button 
-              className="action-btn help-btn" 
-              onClick={handleAbrirManualUsuario}
-              title="Manual de Usuario - Ayuda"
-            >
-              <span>❓</span>
-            </button>
+            {windowWidth > 480 && (
+              <button 
+                className="action-btn help-btn" 
+                onClick={handleAbrirManualUsuario}
+                title="Manual de Usuario - Ayuda"
+              >
+                <span>❓</span>
+              </button>
+            )}
           </div>
 
-          {/* MENÚ DE USUARIO CON DROPDOWN FUNCIONAL */}
+          {/* ✅ MENÚ DE USUARIO ADAPTATIVO */}
           <div className="user-menu-container">
             <div 
               className={`user-menu-trigger ${showUserMenu ? 'active' : ''}`}
               onClick={toggleUserMenu}
             >
-              <div className="user-avatar">B</div>
-              <div className="user-info">
-                <span className="user-name">Brandon</span>
-                <span className="user-role">ADMINISTRADOR</span>
-              </div>
+              <div className="user-avatar">{userData.iniciales}</div>
+              {windowWidth > 768 && (
+                <div className="user-info">
+                  <span className="user-name">{userData.nombre}</span>
+                  <span className="user-role">{userData.rol}</span>
+                </div>
+              )}
               <FaChevronDown className={`dropdown-arrow ${showUserMenu ? 'rotated' : ''}`} />
             </div>
 
-            {/* DROPDOWN MENU */}
+            {/* ✅ DROPDOWN MENU */}
             {showUserMenu && (
               <div className="user-dropdown-menu">
-                <div className="dropdown-header">
+                <div className="dropdown-user-header">
                   <div className="dropdown-user-info">
-                    <div className="dropdown-avatar">B</div>
+                    <div className="dropdown-avatar">{userData.iniciales}</div>
                     <div className="dropdown-details">
-                      <span className="dropdown-name">Brandon</span>
-                      <span className="dropdown-email">brandon@odontologia.com</span>
+                      <span className="dropdown-name">{userData.nombreCompleto}</span>
+                      <span className="dropdown-email">{userData.email}</span>
+                      <span className="dropdown-role">{userData.rol}</span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="dropdown-divider"></div>
-                
                 <div className="dropdown-items">
                   <button className="dropdown-item" onClick={handleProfile}>
                     <FaUserCircle className="dropdown-icon" />
-                    <span>Mi Perfil</span>
+                    <span className="dropdown-text">Mi Perfil</span>
                   </button>
                   
                   <button className="dropdown-item" onClick={handleSettings}>
                     <FaCog className="dropdown-icon" />
-                    <span>Configuración</span>
+                    <span className="dropdown-text">Configuración</span>
                   </button>
                   
-                  <div className="dropdown-divider"></div>
-                  
-                  {/* ✅ BOTÓN ACTUALIZADO PARA USAR MODAL */}
                   <button className="dropdown-item logout-item" onClick={handleLogoutClick}>
                     <FaSignOutAlt className="dropdown-icon" />
-                    <span>Cerrar Sesión</span>
+                    <span className="dropdown-text">Cerrar Sesión</span>
                   </button>
                 </div>
               </div>
@@ -234,7 +347,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ✅ MODAL MODERNO DE CONFIRMACIÓN DE LOGOUT - POSICIÓN TOP-LEFT */}
+      {/* ✅ MODAL DE CONFIRMACIÓN DE LOGOUT */}
       <BaseModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}

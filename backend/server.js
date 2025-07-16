@@ -54,8 +54,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ========== ARCHIVOS ESTÁTICOS MEJORADO ==========
 // Middleware principal para archivos estáticos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+app.use('/uploads', (req, res, next) => {
+    console.log('📁 Solicitud de archivo estático:', req.path);
+    console.log('📂 Archivo completo:', path.join(__dirname, 'uploads', req.path));
+    next();
+}, express.static(path.join(__dirname, 'uploads'), {
     setHeaders: (res, filePath) => {
+        console.log('✅ Sirviendo archivo:', filePath);
+        
         // Establecer headers apropiados según el tipo de archivo
         const ext = path.extname(filePath).toLowerCase();
         
@@ -80,6 +86,76 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
         res.setHeader('X-Content-Type-Options', 'nosniff');
     }
 }));
+
+// ✅ NUEVO: Endpoint específico para archivos con mejor manejo de errores
+app.get('/uploads/:tipo/:filename', (req, res) => {
+    const { tipo, filename } = req.params;
+    
+    console.log('🔍 Solicitud de archivo específico:', { tipo, filename });
+    
+    // Validar tipo de archivo permitido
+    const tiposPermitidos = ['radiografias', 'avatars', 'estudios', 'documentos'];
+    if (!tiposPermitidos.includes(tipo)) {
+        console.log('❌ Tipo de archivo no válido:', tipo);
+        return res.status(400).json({
+            success: false,
+            error: 'Tipo de archivo no válido',
+            tiposPermitidos
+        });
+    }
+    
+    const filePath = path.join(__dirname, 'uploads', tipo, filename);
+    console.log('📂 Ruta completa del archivo:', filePath);
+    
+    // Verificar que el archivo existe
+    if (!fs.existsSync(filePath)) {
+        console.log('❌ Archivo no encontrado:', filePath);
+        
+        // Listar archivos disponibles en el directorio para debugging
+        const dirPath = path.join(__dirname, 'uploads', tipo);
+        try {
+            const files = fs.readdirSync(dirPath);
+            console.log(`📋 Archivos disponibles en ${tipo}:`, files);
+        } catch (err) {
+            console.log(`📋 No se pudo leer directorio ${tipo}:`, err.message);
+        }
+        
+        return res.status(404).json({
+            success: false,
+            error: 'Archivo no encontrado',
+            path: `/uploads/${tipo}/${filename}`,
+            message: `El archivo ${filename} no existe en ${tipo}`,
+            tipo,
+            filename,
+            fullPath: filePath
+        });
+    }
+
+    // Establecer headers apropiados según el tipo de archivo
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg', 
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.pdf': 'application/pdf',
+        '.dcm': 'application/dicom'
+    };
+
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+    res.setHeader('Content-Type', mimeType);
+    
+    console.log('✅ Sirviendo archivo exitosamente:', {
+        filename,
+        tipo,
+        mimeType,
+        size: fs.statSync(filePath).size
+    });
+    
+    // Enviar el archivo
+    res.sendFile(filePath);
+});
 
 // Middleware específico para avatars con logging
 app.use('/uploads/avatars', (req, res, next) => {

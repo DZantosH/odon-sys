@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { buildApiUrl } from '../config/config.js';
 import '../css/ModalRegistrarPacientes.css';
 
-const ModalRegistrarPaciente = ({ isOpen, onClose, onPacienteCreado }) => {
+const ModalRegistrarPaciente = ({ isOpen, onClose, onPacienteCreado, onMostrarExito }) => {
   // Estados para el formulario
   const [formulario, setFormulario] = useState({
     nombre: '',
@@ -121,7 +121,7 @@ const ModalRegistrarPaciente = ({ isOpen, onClose, onPacienteCreado }) => {
     return nuevosErrores;
   }, [formulario]);
 
-  // Función para manejar el envío del formulario
+  // Función de submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -195,9 +195,6 @@ const ModalRegistrarPaciente = ({ isOpen, onClose, onPacienteCreado }) => {
       const resultado = await response.json();
       console.log('✅ Paciente registrado exitosamente:', resultado);
       
-      // Mostrar mensaje de éxito
-      alert(`✅ ¡Paciente registrado exitosamente!\n\nNombre: ${resultado.nombre} ${resultado.apellido_paterno}\nID: ${resultado.id}\nTipo: Temporal\n\nEl paciente ha sido creado como temporal. Podrás convertirlo a permanente desde la lista de pacientes.`);
-      
       // Limpiar formulario
       limpiarFormulario();
       
@@ -206,8 +203,15 @@ const ModalRegistrarPaciente = ({ isOpen, onClose, onPacienteCreado }) => {
         onPacienteCreado(resultado);
       }
       
-      // Cerrar modal
+      // Cerrar modal de registro
       onClose();
+      
+      // Mostrar modal de éxito (manejado por el padre)
+      if (onMostrarExito) {
+        setTimeout(() => {
+          onMostrarExito(resultado);
+        }, 300); // Pequeño delay para que se cierre primero el modal
+      }
       
     } catch (error) {
       console.error('❌ Error al registrar paciente:', error);

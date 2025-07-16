@@ -586,107 +586,111 @@ const HistorialClinico = () => {
       </div>
 
       <div className="navegacion-footer">
-        <div className="paciente-info-footer">
-          <h2>Historial Clínico</h2>
-          <div className="paciente-datos-footer">
-            <p><strong>Paciente:</strong> {datosFormulario.nombre ? 
-              `${datosFormulario.nombre} ${datosFormulario.apellidoPaterno || ''}` : 
-              'Sin nombre'}</p>
-            <p><strong>Fecha:</strong> {new Date().toLocaleDateString('es-MX')}</p>
-            <p><strong>Sección:</strong> {seccionActiva}/{secciones.length}</p>
-            
-            <div className="estado-validacion">
-              {puedeAvanzar() ? (
-                <span className="validacion-ok">✅ Sección completa</span>
-              ) : (
-                <span className="validacion-error">⚠️ Complete los campos requeridos</span>
-              )}
-            </div>
-
-            {generandoPDF && (
-              <div className="progreso-guardado">
-                <h4>📄 Guardando historial...</h4>
-                <div className="progreso-items">
-                  <div className={`progreso-item ${progreso.baseDatos ? 'completado' : 'procesando'}`}>
-                    {progreso.baseDatos ? '✅' : '⏳'} Base de datos
-                  </div>
-                  <div className={`progreso-item ${progreso.pdfGenerado ? 'completado' : 'procesando'}`}>
-                    {progreso.pdfGenerado ? '✅' : '⏳'} Generación PDF
-                  </div>
-                  <div className={`progreso-item ${progreso.pdfGuardado ? 'completado' : 'procesando'}`}>
-                    {progreso.pdfGuardado ? '✅' : '⏳'} Guardado local
-                  </div>
-                  <div className={`progreso-item ${progreso.versionDigital ? 'completado' : 'procesando'}`}>
-                    {progreso.versionDigital ? '✅' : '⏳'} Versión digital
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <button 
-            className="btn-regresar-historial" 
-            onClick={() => {
-              console.log('🔙 Regresando al historial del paciente:', pacienteId);
-              navigate(`/pacientes/${pacienteId}/historial`);
-            }}
-            style={{
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              marginTop: '10px',
-              transition: 'background-color 0.2s'
-            }}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#5a6268'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#6c757d'}
-          >
-            ← Regresar al Historial
-          </button>
-        </div>
-
-        <div className="navegacion-botones">
-          {guardando && (
-            <div className="guardado-temporal guardando">
-              <div className="icono">💾</div>
-              Guardando...
-            </div>
-          )}
-          
-          <button 
-            className="btn btn-volver" 
-            onClick={anteriorSeccion} 
-            disabled={seccionActiva === 1 || generandoPDF}
-          >
-            ← Anterior
-          </button>
-          
-          {seccionActiva === secciones.length ? (
-            <button 
-              className={`btn btn-guardar-final ${!puedeAvanzar() ? 'disabled' : ''}`}
-              onClick={finalizarHistorial} 
-              disabled={guardando || generandoPDF || !puedeAvanzar()}
-            >
-              {generandoPDF ? 
-                '📄 Guardando historial...' : 
-                !puedeAvanzar() ? '⚠️ Complete la sección' : '✅ Finalizar Historial'
-              }
-            </button>
-          ) : (
-            <button 
-              className={`btn btn-siguiente ${!puedeAvanzar() ? 'disabled' : ''}`}
-              onClick={siguienteSeccion} 
-              disabled={guardando || generandoPDF || !puedeAvanzar()}
-            >
-              {guardando ? '💾 Guardando...' : 
-               !puedeAvanzar() ? '⚠️ Complete campos' : 'Siguiente →'}
-            </button>
-          )}
-        </div>
+  <div className="paciente-info-footer">
+    <h2>Historial Clínico</h2>
+    
+    <div className="paciente-datos-footer">
+      <p>
+        <strong>Paciente:</strong> 
+        {datosFormulario.nombre ? 
+          `${datosFormulario.nombre} ${datosFormulario.apellidoPaterno || ''}`.trim() : 
+          'Sin nombre'}
+      </p>
+      
+      <p>
+        <strong>Fecha:</strong> 
+        {new Date().toLocaleDateString('es-MX')}
+      </p>
+      
+      <p>
+        <strong>Sección:</strong> 
+        {seccionActiva}/{secciones.length}
+      </p>
+      
+      {/* Estado de validación */}
+      <div className="estado-validacion">
+        {puedeAvanzar() ? (
+          <span className="validacion-ok">✅ Sección completa</span>
+        ) : (
+          <span className="validacion-error">⚠️ Complete los campos</span>
+        )}
       </div>
+
+      {/* Progreso de guardado cuando está activo */}
+      {generandoPDF && (
+        <div className="progreso-guardado">
+          <h4>📄 Guardando...</h4>
+          <div className="progreso-items">
+            <div className={`progreso-item ${progreso.baseDatos ? 'completado' : 'procesando'}`}>
+              {progreso.baseDatos ? '✅' : '⏳'} BD
+            </div>
+            <div className={`progreso-item ${progreso.pdfGenerado ? 'completado' : 'procesando'}`}>
+              {progreso.pdfGenerado ? '✅' : '⏳'} PDF
+            </div>
+            <div className={`progreso-item ${progreso.pdfGuardado ? 'completado' : 'procesando'}`}>
+              {progreso.pdfGuardado ? '✅' : '⏳'} Local
+            </div>
+            <div className={`progreso-item ${progreso.versionDigital ? 'completado' : 'procesando'}`}>
+              {progreso.versionDigital ? '✅' : '⏳'} Digital
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+    
+    {/* Botón de regresar - más pequeño */}
+    <button 
+      className="btn-regresar-historial" 
+      onClick={() => {
+        console.log('🔙 Regresando al historial del paciente:', pacienteId);
+        navigate(`/pacientes/${pacienteId}/historial`);
+      }}
+    >
+      ← Regresar
+    </button>
+  </div>
+
+  <div className="navegacion-botones">
+    {/* Indicador de guardado */}
+    {guardando && (
+      <div className="guardado-temporal guardando">
+        <div className="icono">💾</div>
+        Guardando...
+      </div>
+    )}
+    
+    {/* Botones de navegación */}
+    <button 
+      className="btn btn-volver" 
+      onClick={anteriorSeccion} 
+      disabled={seccionActiva === 1 || generandoPDF}
+    >
+      ← Anterior
+    </button>
+    
+    {seccionActiva === secciones.length ? (
+      <button 
+        className={`btn btn-guardar-final ${!puedeAvanzar() ? 'disabled' : ''}`}
+        onClick={finalizarHistorial} 
+        disabled={guardando || generandoPDF || !puedeAvanzar()}
+      >
+        {generandoPDF ? 
+          '📄 Guardando...' : 
+          !puedeAvanzar() ? '⚠️ Complete la sección' : '✅ Finalizar'
+        }
+      </button>
+    ) : (
+      <button 
+        className={`btn btn-siguiente ${!puedeAvanzar() ? 'disabled' : ''}`}
+        onClick={siguienteSeccion} 
+        disabled={guardando || generandoPDF || !puedeAvanzar()}
+      >
+        {guardando ? '💾 Guardando...' : 
+         !puedeAvanzar() ? '⚠️ Complete campos' : 'Siguiente →'}
+      </button>
+    )}
+  </div>
+</div>
     </div>
   );
 };
