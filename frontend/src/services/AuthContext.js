@@ -1,6 +1,4 @@
-// src/services/AuthContext.js - Versión final combinada
-// Mantiene todas las funcionalidades + solución de persistencia correcta
-
+// src/services/AuthContext.js - Versión corregida
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Crear el contexto
@@ -15,6 +13,25 @@ export const useAuth = () => {
   return context;
 };
 
+// 🔧 CONFIGURACIÓN DE API - URL base con detección automática
+const getAPIBaseURL = () => {
+  // Si hay variable de entorno, usarla
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Detección automática según el hostname
+  const hostname = window.location.hostname;
+  
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000/api';
+  } else {
+    return `http://${hostname}:5000/api`;
+  }
+};
+
+const API_BASE_URL = getAPIBaseURL();
+
 // Proveedor del contexto
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -27,10 +44,7 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = () => {
       try {
         console.log('🔍 === INICIALIZANDO AUTENTICACIÓN ===');
-        
-        // 🔑 LÓGICA HÍBRIDA MEJORADA:
-        // - localStorage: almacena datos persistentes
-        // - sessionStorage: marca de "navegador abierto"
+        console.log('🌐 API Base URL:', API_BASE_URL);
         
         const savedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('userData');
@@ -43,41 +57,28 @@ export const AuthProvider = ({ children }) => {
 
         if (savedToken && savedUser) {
           if (browserOpen === 'true') {
-            // 🟢 CASO 1: Hay datos Y el navegador sigue abierto
-            // = Recarga de página (F5) o navegación interna
             try {
               const parsedUser = JSON.parse(savedUser);
               setToken(savedToken);
               setUser(parsedUser);
               setIsAuthenticated(true);
               
-              // Renovar marca de navegador abierto
               sessionStorage.setItem('browserOpen', 'true');
               sessionStorage.setItem('sessionActive', 'true');
               sessionStorage.setItem('lastActivity', Date.now().toString());
               
               console.log('✅ SESIÓN RESTAURADA - Usuario:', parsedUser.nombre);
-              console.log('✅ Motivo: Recarga de página o navegación interna');
             } catch (parseError) {
               console.error('❌ Error parseando datos de usuario:', parseError);
               clearAllData();
             }
           } else {
-            // 🔴 CASO 2: Hay datos PERO no hay marca de navegador abierto
-            // = Navegador fue cerrado completamente y reabierto
             console.log('🔓 NAVEGADOR FUE CERRADO - Limpiando datos antiguos');
-            console.log('🗑️ Eliminando datos de localStorage...');
             clearAllData();
-            
-            // Establecer marca para futuras sesiones
             sessionStorage.setItem('browserOpen', 'true');
           }
         } else {
-          // 🔵 CASO 3: No hay datos guardados
-          // = Primera vez o logout previo
           console.log('ℹ️ No hay datos de sesión - Primera vez o logout previo');
-          
-          // Establecer marca para esta sesión
           sessionStorage.setItem('browserOpen', 'true');
         }
         
@@ -91,7 +92,6 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Función auxiliar para limpiar todos los datos
     const clearAllData = () => {
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
@@ -107,27 +107,24 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // 🔑 MANTENER SESIÓN ACTIVA - FUNCIONALIDAD ORIGINAL MEJORADA
+  // 🔑 MANTENER SESIÓN ACTIVA
   useEffect(() => {
     if (!user) return;
 
     console.log('🟢 Configurando mantener sesión activa para:', user.nombre);
 
-    // Marcar sesión como activa
     sessionStorage.setItem('sessionActive', 'true');
-    sessionStorage.setItem('browserOpen', 'true'); // 🔥 AGREGAR MARCA DE NAVEGADOR
+    sessionStorage.setItem('browserOpen', 'true');
 
-    // Renovar marca de sesión cada 10 segundos
     const keepAliveInterval = setInterval(() => {
       sessionStorage.setItem('sessionActive', 'true');
-      sessionStorage.setItem('browserOpen', 'true'); // 🔥 RENOVAR MARCA
+      sessionStorage.setItem('browserOpen', 'true');
       sessionStorage.setItem('lastActivity', Date.now().toString());
     }, 10000);
 
-    // Renovar con actividad del usuario
     const renewSession = () => {
       sessionStorage.setItem('sessionActive', 'true');
-      sessionStorage.setItem('browserOpen', 'true'); // 🔥 RENOVAR MARCA
+      sessionStorage.setItem('browserOpen', 'true');
       sessionStorage.setItem('lastActivity', Date.now().toString());
     };
 
@@ -144,22 +141,16 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user]);
 
-  // 🔑 DETECTAR CIERRE DE PESTAÑA/NAVEGADOR - FUNCIONALIDAD ORIGINAL MEJORADA
+  // 🔑 DETECTAR CIERRE DE PESTAÑA/NAVEGADOR
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log('⚠️ Pestaña/navegador cerrándose...');
-      
-      // 🔥 NUEVO: Al cerrar la ÚLTIMA pestaña, quitar marca de navegador abierto
-      // sessionStorage se limpia automáticamente al cerrar todas las pestañas
-      // localStorage se mantiene para futuras verificaciones
     };
 
     const handleUnload = () => {
       console.log('🔄 Evento unload ejecutado');
-      // sessionStorage se limpia automáticamente
     };
 
-    // 🔑 DETECTAR cuando la pestaña se oculta (cambio de pestaña o minimizar)
     const handleVisibilityChange = () => {
       if (document.hidden) {
         console.log('👁️ Pestaña oculta');
@@ -171,7 +162,6 @@ export const AuthProvider = ({ children }) => {
           const timeHidden = Date.now() - parseInt(hiddenAt);
           console.log(`⏱️ Pestaña estuvo oculta por ${Math.round(timeHidden / 1000)} segundos`);
           
-          // 🔥 TIEMPO REDUCIDO: Si estuvo oculta más de 5 minutos, cerrar sesión
           if (timeHidden > 5 * 60 * 1000) {
             console.log('🔓 Pestaña oculta demasiado tiempo (>5min) - cerrando sesión');
             logout();
@@ -179,13 +169,11 @@ export const AuthProvider = ({ children }) => {
           }
         }
         sessionStorage.removeItem('tabHiddenAt');
-        // Reactivar sesión al volver
         sessionStorage.setItem('sessionActive', 'true');
-        sessionStorage.setItem('browserOpen', 'true'); // 🔥 RENOVAR MARCA
+        sessionStorage.setItem('browserOpen', 'true');
       }
     };
 
-    // 🔑 DETECTAR pérdida de foco de la ventana
     const handleWindowBlur = () => {
       console.log('🪟 Ventana perdió foco');
       sessionStorage.setItem('windowBlurredAt', Date.now().toString());
@@ -198,7 +186,6 @@ export const AuthProvider = ({ children }) => {
         const timeBlurred = Date.now() - parseInt(blurredAt);
         console.log(`⏱️ Ventana sin foco por ${Math.round(timeBlurred / 1000)} segundos`);
         
-        // 🔥 TIEMPO REDUCIDO: Si estuvo sin foco más de 10 minutos, cerrar sesión
         if (timeBlurred > 10 * 60 * 1000) {
           console.log('🔓 Ventana sin foco demasiado tiempo (>10min) - cerrando sesión');
           logout();
@@ -206,12 +193,10 @@ export const AuthProvider = ({ children }) => {
         }
       }
       sessionStorage.removeItem('windowBlurredAt');
-      // Reactivar sesión al volver
       sessionStorage.setItem('sessionActive', 'true');
-      sessionStorage.setItem('browserOpen', 'true'); // 🔥 RENOVAR MARCA
+      sessionStorage.setItem('browserOpen', 'true');
     };
 
-    // Agregar event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('unload', handleUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -227,16 +212,15 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // 🔑 VERIFICACIÓN PERIÓDICA DE SESIÓN - FUNCIONALIDAD ORIGINAL MEJORADA
+  // 🔑 VERIFICACIÓN PERIÓDICA DE SESIÓN
   useEffect(() => {
     if (!user) return;
 
     const checkSession = () => {
       const sessionActive = sessionStorage.getItem('sessionActive');
-      const browserOpen = sessionStorage.getItem('browserOpen'); // 🔥 NUEVA VERIFICACIÓN
+      const browserOpen = sessionStorage.getItem('browserOpen');
       const lastActivity = sessionStorage.getItem('lastActivity');
       
-      // Verificar marca de navegador abierto
       if (!browserOpen || browserOpen !== 'true') {
         console.log('🔓 Marca de navegador abierto perdida - cerrando sesión');
         logout();
@@ -251,7 +235,6 @@ export const AuthProvider = ({ children }) => {
 
       if (lastActivity) {
         const timeSinceActivity = Date.now() - parseInt(lastActivity);
-        // 🔥 TIEMPO REDUCIDO: 20 minutos sin actividad
         if (timeSinceActivity > 20 * 60 * 1000) {
           console.log('🔓 Sin actividad por más de 20 minutos - cerrando sesión');
           logout();
@@ -260,100 +243,153 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Verificar cada 30 segundos
     const checkInterval = setInterval(checkSession, 30000);
-
     return () => clearInterval(checkInterval);
   }, [user]);
 
-  // 🔑 FUNCIÓN DE LOGIN - FUNCIONALIDAD ORIGINAL MEJORADA
+  // 🔑 FUNCIÓN DE LOGIN - CORREGIDA Y MEJORADA
   const login = async (email, password) => {
     try {
-      console.log('🔐 Iniciando sesión para:', email);
+      console.log('🔐 === INICIANDO LOGIN ===');
+      console.log('📧 Email:', email);
+      console.log('🌐 URL:', `${API_BASE_URL}/auth/login`);
+
+      // Verificar que la URL está bien construida
+      const loginUrl = `${API_BASE_URL}/auth/login`;
       
-      const credentials = {
-        email: email,
-        password: password
-      };
-      
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({ email, password })
       });
 
-      const data = await response.json();
+      console.log('📡 Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
 
-      if (response.ok) {
-        setToken(data.token);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        
-        // 🔥 ALMACENAMIENTO HÍBRIDO MEJORADO:
-        // localStorage: datos persistentes
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        
-        // sessionStorage: marcas de sesión activa
-        sessionStorage.setItem('browserOpen', 'true');       // 🔥 MARCA DE NAVEGADOR ABIERTO
-        sessionStorage.setItem('sessionActive', 'true');     // Marca de sesión activa
-        sessionStorage.setItem('lastActivity', Date.now().toString()); // Última actividad
-        
-        console.log('✅ === LOGIN EXITOSO ===');
-        console.log('👤 Usuario:', data.user.nombre);
-        console.log('🎭 Rol:', data.user.rol);
-        console.log('💾 Datos en localStorage: token + userData');
-        console.log('🔄 Marcas en sessionStorage: browserOpen + sessionActive + lastActivity');
-        console.log('✅ === FIN LOGIN ===');
-        
-        return { success: true, user: data.user };
-      } else {
-        console.error('❌ Error en login:', data.error || data.message);
-        return { success: false, error: data.error || data.message || 'Error de autenticación' };
+      // Intentar parsear la respuesta
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('❌ Error parseando respuesta JSON:', parseError);
+        return { 
+          success: false, 
+          error: 'Error de comunicación con el servidor. Respuesta no válida.' 
+        };
       }
+
+      if (!response.ok) {
+        console.error('❌ Login fallido:', data);
+        return { 
+          success: false, 
+          error: data.error || data.message || `Error ${response.status}: ${response.statusText}` 
+        };
+      }
+
+      // 🔥 LOGIN EXITOSO - ACTUALIZAR ESTADO
+      console.log('✅ Login exitoso:', data);
+      console.log('📋 Estructura de respuesta:', Object.keys(data));
+      
+      // Flexibilidad en los nombres de campos de la respuesta
+      const receivedToken = data.token || data.accessToken || data.jwt;
+      const usuario = data.usuario || data.user || data.userData;
+      
+      console.log('🔑 Token recibido:', !!receivedToken);
+      console.log('👤 Usuario recibido:', !!usuario);
+      console.log('📊 Contenido completo de data:', JSON.stringify(data, null, 2));
+      
+      if (!receivedToken || !usuario) {
+        console.error('❌ Respuesta incompleta del servidor:');
+        console.error('- Token encontrado:', !!receivedToken);
+        console.error('- Usuario encontrado:', !!usuario);
+        console.error('- Campos disponibles:', Object.keys(data));
+        console.error('- Respuesta completa:', data);
+        return { 
+          success: false, 
+          error: `Respuesta incompleta del servidor. Campos disponibles: ${Object.keys(data).join(', ')}` 
+        };
+      }
+
+      // Actualizar estado de React
+      setToken(receivedToken);
+      setUser(usuario);
+      setIsAuthenticated(true);
+
+      // Guardar en localStorage
+      localStorage.setItem('token', receivedToken);
+      localStorage.setItem('userData', JSON.stringify(usuario));
+
+      // Configurar sessionStorage
+      sessionStorage.setItem('browserOpen', 'true');
+      sessionStorage.setItem('sessionActive', 'true');
+      sessionStorage.setItem('lastActivity', Date.now().toString());
+
+      console.log('💾 Datos guardados en localStorage y sessionStorage');
+      console.log('👤 Usuario logueado:', usuario.nombre);
+      console.log('🔑 Token guardado');
+      console.log('✅ === LOGIN COMPLETADO ===');
+
+      return { success: true, user: usuario };
+
     } catch (error) {
-      console.error('❌ Error de conexión en login:', error);
-      return { success: false, error: 'Error de conexión. Verifique su internet.' };
+      console.error('❌ Error crítico en login:', error);
+      
+      // Análisis del tipo de error
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        return { 
+          success: false, 
+          error: 'No se puede conectar al servidor. Verifica que el backend esté ejecutándose.' 
+        };
+      }
+      
+      if (error.name === 'AbortError') {
+        return { 
+          success: false, 
+          error: 'La conexión fue cancelada. Intenta nuevamente.' 
+        };
+      }
+      
+      return { 
+        success: false, 
+        error: error.message || 'Error desconocido durante el login' 
+      };
     }
   };
 
-  // 🔑 FUNCIÓN DE LOGOUT - FUNCIONALIDAD ORIGINAL MEJORADA
+  // 🔑 FUNCIÓN DE LOGOUT - MEJORADA
   const logout = () => {
     console.log('🔓 === CERRANDO SESIÓN ===');
     console.log('👤 Usuario actual:', user?.nombre || 'N/A');
     
-    // Limpiar estado de React
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
     
-    // 🔥 LIMPIAR TODO EL ALMACENAMIENTO
-    // localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
     
-    // sessionStorage  
-    sessionStorage.removeItem('browserOpen');        // 🔥 QUITAR MARCA DE NAVEGADOR
+    sessionStorage.removeItem('browserOpen');
     sessionStorage.removeItem('sessionActive');
     sessionStorage.removeItem('lastActivity');
     sessionStorage.removeItem('tabHiddenAt');
     sessionStorage.removeItem('windowBlurredAt');
     
-    console.log('🗑️ localStorage limpiado: token, userData');
-    console.log('🗑️ sessionStorage limpiado: browserOpen, sessionActive, lastActivity, etc.');
+    console.log('🗑️ localStorage y sessionStorage limpiados');
     console.log('✅ === LOGOUT COMPLETADO ===');
   };
 
-  // 🔑 FUNCIONES ORIGINALES MANTENIDAS
-  
-  // Función para verificar si el token sigue siendo válido
+  // 🔑 VERIFICAR TOKEN
   const verifyToken = async () => {
     if (!token) return false;
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify', {
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -374,7 +410,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Función para actualizar datos del usuario
+  // 🔑 ACTUALIZAR DATOS DEL USUARIO
   const updateUser = (userData) => {
     const updatedUser = { ...user, ...userData };
     setUser(updatedUser);
@@ -382,7 +418,7 @@ export const AuthProvider = ({ children }) => {
     console.log('📝 Datos de usuario actualizados:', userData);
   };
 
-  // Función para obtener headers con token
+  // 🔑 OBTENER HEADERS DE AUTENTICACIÓN
   const getAuthHeaders = () => {
     return {
       'Authorization': `Bearer ${token}`,
@@ -390,7 +426,7 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
-  // Función para hacer peticiones autenticadas
+  // 🔑 FETCH AUTENTICADO
   const authFetch = async (url, options = {}) => {
     const authOptions = {
       ...options,
@@ -403,7 +439,6 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch(url, authOptions);
       
-      // Si el token expiró, cerrar sesión
       if (response.status === 401) {
         console.log('🔓 Token expirado (401) - cerrando sesión');
         logout();
@@ -417,7 +452,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 🔥 NUEVA FUNCIÓN: Verificar estado de la sesión
+  // 🔑 OBTENER ESTADO DE LA SESIÓN
   const getSessionStatus = () => {
     return {
       isAuthenticated,
@@ -426,7 +461,8 @@ export const AuthProvider = ({ children }) => {
       browserOpen: sessionStorage.getItem('browserOpen') === 'true',
       sessionActive: sessionStorage.getItem('sessionActive') === 'true',
       lastActivity: sessionStorage.getItem('lastActivity'),
-      timeToExpire: user ? calculateTimeToExpire() : null
+      timeToExpire: user ? calculateTimeToExpire() : null,
+      apiUrl: API_BASE_URL
     };
   };
 
@@ -436,34 +472,35 @@ export const AuthProvider = ({ children }) => {
     if (!lastActivity) return null;
     
     const timeSinceActivity = Date.now() - parseInt(lastActivity);
-    const timeToExpire = (20 * 60 * 1000) - timeSinceActivity; // 20 minutos
+    const timeToExpire = (20 * 60 * 1000) - timeSinceActivity;
     
     return timeToExpire > 0 ? timeToExpire : 0;
   };
 
-  // Valor del contexto - FUNCIONALIDAD ORIGINAL + NUEVAS FUNCIONES
+  // Valor del contexto
   const contextValue = {
-    // Estado original
+    // Estado
     user,
     token,
     loading,
     isAuthenticated,
     
-    // Funciones originales
+    // Funciones principales
     login,
     logout,
     verifyToken,
     updateUser,
     getAuthHeaders,
     authFetch,
-    
-    // 🔥 NUEVAS FUNCIONES
     getSessionStatus,
     
-    // Datos adicionales del usuario (originales)
+    // Datos adicionales del usuario
     userName: user?.nombre || 'Usuario',
     userRole: user?.rol || 'user',
     userId: user?.id || null,
+    
+    // Debug info
+    apiUrl: API_BASE_URL,
   };
 
   return (
@@ -473,7 +510,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// 🔑 COMPONENTE DE PROTECCIÓN - FUNCIONALIDAD ORIGINAL MEJORADA
+// 🔑 COMPONENTE DE PROTECCIÓN
 export const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
@@ -494,7 +531,6 @@ export const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   if (!isAuthenticated) {
     console.log('🔒 Acceso denegado - redirigiendo a login');
-    // Redirigir al login
     window.location.href = '/login';
     return null;
   }
