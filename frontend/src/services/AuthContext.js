@@ -1,5 +1,6 @@
-// src/services/AuthContext.js - Versión corregida
+// src/services/AuthContext.js - Versión unificada con config centralizado
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { buildApiUrl, getAuthHeaders as getConfigAuthHeaders } from '../config/config'; // ✅ IMPORTAR CONFIG
 
 // Crear el contexto
 const AuthContext = createContext();
@@ -13,24 +14,9 @@ export const useAuth = () => {
   return context;
 };
 
-// 🔧 CONFIGURACIÓN DE API - URL base con detección automática
-const getAPIBaseURL = () => {
-  // Si hay variable de entorno, usarla
-  if (process.env.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // Detección automática según el hostname
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5000/api';
-  } else {
-    return `http://${hostname}:5000/api`;
-  }
-};
-
-const API_BASE_URL = getAPIBaseURL();
+// ✅ ELIMINAR: Lógica duplicada de detección de URL
+// const getAPIBaseURL = () => { ... }
+// const API_BASE_URL = getAPIBaseURL();
 
 // Proveedor del contexto
 export const AuthProvider = ({ children }) => {
@@ -44,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = () => {
       try {
         console.log('🔍 === INICIALIZANDO AUTENTICACIÓN ===');
-        console.log('🌐 API Base URL:', API_BASE_URL);
+        console.log('🌐 API Base URL:', buildApiUrl('')); // ✅ USAR CONFIG CENTRALIZADO
         
         const savedToken = localStorage.getItem('token');
         const savedUser = localStorage.getItem('userData');
@@ -247,15 +233,15 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(checkInterval);
   }, [user]);
 
-  // 🔑 FUNCIÓN DE LOGIN - CORREGIDA Y MEJORADA
+  // 🔑 FUNCIÓN DE LOGIN - USANDO CONFIG CENTRALIZADO
   const login = async (email, password) => {
     try {
       console.log('🔐 === INICIANDO LOGIN ===');
       console.log('📧 Email:', email);
-      console.log('🌐 URL:', `${API_BASE_URL}/auth/login`);
-
-      // Verificar que la URL está bien construida
-      const loginUrl = `${API_BASE_URL}/auth/login`;
+      
+      // ✅ USAR buildApiUrl en lugar de URL hardcodeada
+      const loginUrl = buildApiUrl('/auth/login');
+      console.log('🌐 URL:', loginUrl);
       
       const response = await fetch(loginUrl, {
         method: 'POST',
@@ -384,12 +370,13 @@ export const AuthProvider = ({ children }) => {
     console.log('✅ === LOGOUT COMPLETADO ===');
   };
 
-  // 🔑 VERIFICAR TOKEN
+  // 🔑 VERIFICAR TOKEN - USANDO CONFIG CENTRALIZADO
   const verifyToken = async () => {
     if (!token) return false;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      // ✅ USAR buildApiUrl en lugar de URL hardcodeada
+      const response = await fetch(buildApiUrl('/auth/verify'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -418,7 +405,7 @@ export const AuthProvider = ({ children }) => {
     console.log('📝 Datos de usuario actualizados:', userData);
   };
 
-  // 🔑 OBTENER HEADERS DE AUTENTICACIÓN
+  // 🔑 OBTENER HEADERS DE AUTENTICACIÓN - USANDO CONFIG CENTRALIZADO
   const getAuthHeaders = () => {
     return {
       'Authorization': `Bearer ${token}`,
@@ -462,7 +449,7 @@ export const AuthProvider = ({ children }) => {
       sessionActive: sessionStorage.getItem('sessionActive') === 'true',
       lastActivity: sessionStorage.getItem('lastActivity'),
       timeToExpire: user ? calculateTimeToExpire() : null,
-      apiUrl: API_BASE_URL
+      apiUrl: buildApiUrl('') // ✅ USAR CONFIG CENTRALIZADO
     };
   };
 
@@ -500,7 +487,7 @@ export const AuthProvider = ({ children }) => {
     userId: user?.id || null,
     
     // Debug info
-    apiUrl: API_BASE_URL,
+    apiUrl: buildApiUrl(''), // ✅ USAR CONFIG CENTRALIZADO
   };
 
   return (

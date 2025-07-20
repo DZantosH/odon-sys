@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import '../css/PanelPrincipal.css';
 import useAutoUpdateCitas from '../hooks/useAutoUpdateCitas';
+import { buildApiUrl, getAuthHeaders } from '../config/config'; // ← Usar config.js
 
 const CalendarioDinamico = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -19,20 +20,6 @@ const CalendarioDinamico = () => {
   ];
 
   const dayNames = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
-  };
-
-  const buildApiUrlLocal = (endpoint) => {
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-    const fullUrl = `${baseUrl}${endpoint}`;
-    return fullUrl;
-  };
 
   // Función para limpiar observaciones de logs automáticos
   const limpiarObservaciones = (observaciones) => {
@@ -65,7 +52,7 @@ const CalendarioDinamico = () => {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
             
-      const response = await fetch(buildApiUrlLocal(`/citas/mes/${year}/${month}`), {
+      const response = await fetch(buildApiUrl(`/citas/mes/${year}/${month}`), {
         headers: getAuthHeaders()
       });
       
@@ -135,7 +122,7 @@ const CalendarioDinamico = () => {
     try {
       const fechaFormatted = fecha.toISOString().split('T')[0];
       
-      const response = await fetch(buildApiUrlLocal(`/citas/fecha/${fechaFormatted}`), {
+      const response = await fetch(buildApiUrl(`/citas/fecha/${fechaFormatted}`), {
         headers: getAuthHeaders()
       });
       
@@ -143,7 +130,6 @@ const CalendarioDinamico = () => {
         const result = await response.json();
         let citas = result.data || result || [];
         
-        // ✅ CAMBIO: Solo filtrar citas de días pasados (no del día actual)
         const ahora = new Date();
         const fechaSeleccionada = new Date(fecha);
         

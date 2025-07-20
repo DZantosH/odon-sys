@@ -6,7 +6,8 @@ const getEnvironmentConfig = () => {
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
   return {
-    API_BASE_URL: process.env.REACT_APP_API_URL || (isLocalhost ? 'http://localhost:5000/api' : '/api'),
+    API_BASE_URL: process.env.REACT_APP_API_URL || 
+      (isLocalhost ? 'http://localhost:5000/api' : 'http://98.82.131.153:5000/api'),
     ENVIRONMENT: isLocalhost ? 'development' : 'production',
     APP_URL: `${protocol}//${hostname}${port ? ':' + port : ''}`,
   };
