@@ -5,7 +5,7 @@ import { useAuth } from '../services/AuthContext';
 import ModalEditarPaciente from '../components/ModalEditarPaciente';
 import ModalRegistrarPaciente from '../components/ModalRegistrarPaciente';
 import { ConfirmModal } from '../components/modals/ModalSystem';
-import { PacienteRegistradoModal } from '../components/modals/AlertaSystem'; // ✅ NUEVO IMPORT
+import { PacienteRegistradoModal } from '../components/modals/AlertaSystem';
 import '../css/Pacientes.css';
 
 const Pacientes = () => {

@@ -6,8 +6,10 @@ const getEnvironmentConfig = () => {
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
 
   return {
-    API_BASE_URL: process.env.REACT_APP_API_URL || 
-      (isLocalhost ? 'http://localhost:5000/api' : 'http://98.82.131.153:5000/api'),
+    // ✅ CORREGIDO: URL específica para cada entorno
+    API_BASE_URL: isLocalhost 
+      ? 'http://localhost:5000/api' 
+      : 'http://98.82.131.153:5000/api',
     ENVIRONMENT: isLocalhost ? 'development' : 'production',
     APP_URL: `${protocol}//${hostname}${port ? ':' + port : ''}`,
   };
@@ -22,9 +24,8 @@ export const {
 } = CONFIG;
 
 export const buildApiUrl = (endpoint) => {
-  console.log('🔍 Variable de entorno REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-  const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-  const fullUrl = `${baseUrl}${endpoint}`;
+  // ✅ CORREGIDO: Sin process.env, usar CONFIG directamente
+  const fullUrl = `${API_BASE_URL}${endpoint}`;
   console.log('🔗 buildApiUrl generó:', fullUrl);
   return fullUrl;
 };
@@ -57,7 +58,6 @@ export const getFileUploadHeaders = () => {
   const token = localStorage.getItem('token');
   
   return {
-    // No incluir Content-Type para que el navegador lo establezca automáticamente con boundary
     'Authorization': token ? `Bearer ${token}` : ''
   };
 };
@@ -71,12 +71,10 @@ export const validateRadiografiaFile = (file) => {
     return errors;
   }
   
-  // Validar tamaño
   if (file.size > RADIOGRAFIAS_CONFIG.MAX_FILE_SIZE) {
     errors.push(`El archivo es demasiado grande. Máximo permitido: ${RADIOGRAFIAS_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`);
   }
   
-  // Validar tipo
   if (!RADIOGRAFIAS_CONFIG.ALLOWED_TYPES.includes(file.type)) {
     errors.push(`Tipo de archivo no permitido. Solo se permiten: ${RADIOGRAFIAS_CONFIG.ALLOWED_TYPES.join(', ')}`);
   }
