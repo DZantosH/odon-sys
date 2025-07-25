@@ -3,10 +3,21 @@ const getEnvironmentConfig = () => {
   const protocol = window.location.protocol;
   const port = window.location.port;
 
+  // 🔧 MEJORAR DETECCIÓN DE ENTORNO
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isProduction = hostname === '98.82.131.153';
+
+  console.log('🔧 Debug config:', {
+    hostname,
+    protocol,
+    port,
+    isLocalhost,
+    isProduction,
+    fullUrl: window.location.href
+  });
 
   return {
-    // ✅ CORREGIDO: URL específica para cada entorno
+    // ✅ CORREGIDO: Detectar correctamente el entorno
     API_BASE_URL: isLocalhost 
       ? 'http://localhost:5000/api' 
       : 'http://98.82.131.153:5000/api',
@@ -119,7 +130,8 @@ export const calcularEdad = (fechaNacimiento) => {
   }
 };
 
-if (ENVIRONMENT === 'development') {
-  console.log('🔧 Auto-detected config:', CONFIG);
+// 🔧 MOSTRAR CONFIG EN DESARROLLO
+console.log('🔧 Configuración cargada:', CONFIG);
+if (CONFIG.ENVIRONMENT !== 'production') {
   console.log('📸 Radiografías config:', RADIOGRAFIAS_CONFIG);
 }

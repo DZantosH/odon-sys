@@ -3440,6 +3440,435 @@
   }
 }
 
+/* ===== MEJORAS PARA EL SIDEBAR EN TABLETS ===== */
+@media (max-width: 1024px) {
+  .agendar-citas-sidebar-container {
+    width: 600px; /* Aumentar ancho en tablets */
+    max-width: 95vw;
+  }
+  
+  .agendar-citas-content {
+    padding: 20px; /* Más espacio interno */
+  }
+  
+  .agendar-citas-form {
+    gap: 16px; /* Más espacio entre campos */
+  }
+  
+  .form-control {
+    padding: 14px 16px; /* Campos más grandes para táctil */
+    font-size: 16px; /* Evitar zoom en iOS */
+    border-radius: 10px;
+  }
+  
+  .field-label {
+    font-size: 15px; /* Etiquetas más legibles */
+    margin-bottom: 6px;
+  }
+  
+  /* Mejorar área de toque para elementos interactivos */
+  .search-result-item,
+  .create-new-patient {
+    padding: 16px 20px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .agendar-checkbox-label {
+    padding: 12px 16px;
+    min-height: 50px;
+  }
+}
+
+/* ===== OPTIMIZACIONES PARA GRIDS DE HORARIOS EN TABLETS ===== */
+@media (max-width: 1024px) {
+  /* Grid de horarios más amigable para táctil */
+  .agendar-citas-content div[style*="grid-template-columns: repeat(auto-fit, minmax(80px, 1fr))"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important; /* 4 columnas fijas */
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+  
+  /* Botones de horarios más grandes */
+  .agendar-citas-content button[style*="padding: 8px 4px"] {
+    padding: 12px 8px !important;
+    min-height: 60px !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Mejorar contraste para pantallas de tablets */
+  .agendar-citas-content button[style*="padding: 12px 8px"] {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .agendar-citas-content button[style*="padding: 12px 8px"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+  }
+}
+
+/* ===== MEJORAS PARA TABLETS ESPECÍFICAS (768px - 1024px) ===== */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .agendar-citas-sidebar-container {
+    width: 650px;
+    box-shadow: -15px 0 40px rgba(30, 58, 138, 0.4);
+  }
+  
+  .agendar-citas-header {
+    padding: 20px 24px;
+  }
+  
+  .agendar-citas-title {
+    font-size: 20px;
+  }
+  
+  .agendar-citas-close-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+  
+  /* Información de precio más destacada */
+  .price-info-card {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 8px;
+  }
+  
+  .price-info-price {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  /* Botones de acción más grandes */
+  .agendar-citas-buttons {
+    gap: 16px;
+    padding-top: 20px;
+  }
+  
+  .btn-cancel-agendar,
+  .btn-submit-agendar {
+    padding: 16px 24px;
+    font-size: 16px;
+    border-radius: 12px;
+    min-height: 56px;
+  }
+}
+
+/* ===== MEJORAS PARA ORIENTACIÓN LANDSCAPE EN TABLETS ===== */
+@media (max-width: 1024px) and (orientation: landscape) {
+  .agendar-citas-sidebar-container {
+    width: 70vw;
+    max-width: 800px;
+  }
+  
+  .agendar-citas-content {
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+  }
+  
+  /* Grid de horarios en landscape */
+  .agendar-citas-content div[style*="grid-template-columns"] {
+    grid-template-columns: repeat(6, 1fr) !important;
+    max-height: 180px !important;
+  }
+  
+  /* Campos en dos columnas para landscape */
+  .agendar-temporal-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  
+  .agendar-temporal-section .form-group:last-child {
+    grid-column: 1 / -1; /* Teléfono ocupa toda la fila */
+  }
+}
+
+/* ===== MEJORAS PARA SELECTS Y DROPDOWNS ===== */
+@media (max-width: 1024px) {
+  select.form-control {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    appearance: none;
+  }
+  
+  /* Mejorar contraste en selects */
+  select.form-control option {
+    padding: 12px;
+    background: white;
+    color: #1e293b;
+  }
+}
+
+/* ===== MEJORAS PARA ESTADOS DE CARGA ===== */
+@media (max-width: 1024px) {
+  .loading-text {
+    padding: 16px;
+    text-align: center;
+    background: rgba(6, 214, 160, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(6, 214, 160, 0.2);
+  }
+  
+  /* Estados de error y éxito más prominentes */
+  .agendar-citas-error,
+  .agendar-citas-success {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 16px;
+  }
+  
+  .agendar-citas-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 2px solid rgba(239, 68, 68, 0.3);
+  }
+  
+  .agendar-citas-success {
+    background: rgba(6, 214, 160, 0.15);
+    border: 2px solid rgba(6, 214, 160, 0.3);
+  }
+}
+
+/* ===== MEJORAS PARA SCROLL EN TABLETS ===== */
+@media (max-width: 1024px) {
+  .agendar-citas-content::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .agendar-citas-content::-webkit-scrollbar-track {
+    background: rgba(6, 214, 160, 0.1);
+    border-radius: 4px;
+  }
+  
+  .agendar-citas-content::-webkit-scrollbar-thumb {
+    background: rgba(6, 214, 160, 0.4);
+    border-radius: 4px;
+  }
+  
+  .agendar-citas-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(6, 214, 160, 0.6);
+  }
+  
+  /* Scroll suave para contenedores con horarios */
+  .agendar-citas-content div[style*="overflowY: auto"] {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ===== MEJORAS PARA INPUTS DE FECHA Y NÚMERO ===== */
+@media (max-width: 1024px) {
+  input[type="date"],
+  input[type="number"],
+  input[type="tel"] {
+    min-height: 50px;
+    font-size: 16px; /* Evitar zoom automático en iOS */
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2306D6A0' viewBox='0 0 20 20'%3E%3Cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-size: 20px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+}
+
+/* ===== MEJORAS PARA TEXTAREA ===== */
+@media (max-width: 1024px) {
+  textarea.form-control {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+}
+
+/* ===== ANIMACIONES MEJORADAS PARA TABLETS ===== */
+@media (max-width: 1024px) {
+  @keyframes slideInRight {
+    from { 
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to { 
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .agendar-citas-sidebar-container {
+    animation: slideInRight 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  /* Animación para elementos que aparecen */
+  .search-results-container {
+    animation: fadeInDown 0.3s ease-out;
+  }
+  
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ===== MEJORAS PARA ACCESIBILIDAD EN TABLETS ===== */
+@media (max-width: 1024px) {
+  /* Mejorar contraste para elementos enfocados */
+  .form-control:focus,
+  button:focus,
+  .search-result-item:focus {
+    outline: 3px solid #06D6A0;
+    outline-offset: 2px;
+  }
+  
+  /* Áreas de toque mínimas recomendadas */
+  button,
+  .search-result-item,
+  .create-new-patient,
+  .agendar-checkbox-label {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Mejorar legibilidad de texto */
+  .field-label,
+  .search-result-name,
+  .patient-name {
+    font-weight: 600;
+    color: #1e293b;
+  }
+  
+  .search-result-details,
+  .cita-type,
+  .price-info-description {
+    font-weight: 500;
+    color: #475569;
+  }
+}
+
+/* ===== MEJORAS ESPECÍFICAS PARA IPAD PRO Y TABLETS GRANDES ===== */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .agendar-citas-sidebar-container {
+    width: 700px;
+  }
+  
+  .agendar-citas-content {
+    padding: 24px 28px;
+  }
+  
+  .form-control {
+    font-size: 17px;
+    padding: 16px 20px;
+  }
+  
+  /* Grid de horarios optimizado para pantallas grandes */
+  .agendar-citas-content div[style*="grid-template-columns"] {
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 16px !important;
+  }
+  
+  .agendar-citas-content button[style*="padding"] {
+    padding: 16px 12px !important;
+    min-height: 70px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* ===== MEJORAS PARA MODO OSCURO (SI ES NECESARIO) ===== */
+@media (prefers-color-scheme: dark) and (max-width: 1024px) {
+  .agendar-citas-sidebar-container {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: #f1f5f9;
+  }
+  
+  .form-control {
+    background: #334155;
+    border-color: #475569;
+    color: #f1f5f9;
+  }
+  
+  .form-control:focus {
+    background: #475569;
+    border-color: #06D6A0;
+  }
+  
+  .search-results-container {
+    background: #334155;
+    border-color: #475569;
+  }
+  
+  .search-result-item {
+    background: #475569;
+    color: #f1f5f9;
+  }
+  
+  .search-result-item:hover {
+    background: rgba(6, 214, 160, 0.2);
+  }
+}
+
+/* ===== OPTIMIZACIONES DE RENDIMIENTO PARA TABLETS ===== */
+@media (max-width: 1024px) {
+  /* Usar transform en lugar de cambiar propiedades de layout */
+  .search-result-item,
+  .agendar-checkbox-label,
+  button {
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* Reducir complejidad de sombras en dispositivos táctiles */
+  .agendar-citas-sidebar-container {
+    box-shadow: -10px 0 30px rgba(30, 58, 138, 0.3);
+  }
+  
+  /* Optimizar gradientes para mejor rendimiento */
+  .agendar-citas-header,
+  .btn-submit-agendar {
+    background: #06D6A0; /* Fallback sólido */
+    background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
+  }
+}
+
+/* ===== AJUSTES FINALES PARA COMPATIBILIDAD ===== */
+@media (max-width: 1024px) {
+  /* Asegurar que los elementos no se salgan del contenedor */
+  .agendar-citas-form * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Mejorar el espaciado en pantallas táctiles */
+  .form-group + .form-group {
+    margin-top: 20px;
+  }
+  
+  /* Asegurar que los textos largos se ajusten correctamente */
+  .search-result-name,
+  .patient-name,
+  .field-label span {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+
 /* ===== MÓVILES ESTÁNDAR - IPHONE/ANDROID (380px - 480px) ===== */
 @media (max-width: 480px) {
   .panel-principal-container {
