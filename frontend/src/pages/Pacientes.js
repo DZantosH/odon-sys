@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { buildApiUrl } from '../config/config.js';
 import { useAuth } from '../services/AuthContext';
-import ModalEditarPaciente from '../components/ModalEditarPaciente';
-import ModalRegistrarPaciente from '../components/ModalRegistrarPaciente';
-import { ConfirmModal } from '../components/modals/ModalSystem';
+import ModalEditarPaciente from '../components/modals/pacientes/ModalEditarPaciente';
+import ModalRegistrarPaciente from '../components/modals/pacientes/ModalRegistrarPaciente';
+import { ConfirmModal, PacienteConvertidoSuccessModal } from '../components/modals/ModalSystem';
 import { PacienteRegistradoModal } from '../components/modals/AlertaSystem';
 import '../css/Pacientes.css';
 
@@ -33,6 +33,12 @@ const Pacientes = () => {
     isOpen: false,
     pacienteData: {}
   });
+
+  // ✅ NUEVO ESTADO PARA MODAL DE CONVERSIÓN EXITOSA
+const [modalConversionExito, setModalConversionExito] = useState({
+  isOpen: false,
+  pacienteData: {}
+});
 
   // ✅ FUNCIÓN PARA MOSTRAR MODAL DE ÉXITO
   const handleMostrarExito = (pacienteData) => {
@@ -178,56 +184,62 @@ const Pacientes = () => {
   }, [calcularEdad, user]);
 
   // FUNCIÓN PARA CONVERTIR PACIENTE TEMPORAL A PERMANENTE
-  const convertirPacientePermanente = async (paciente) => {
-    try {
-      setAccionEnProceso(`converting-${paciente.id}`);
-      
-      // Generar nueva matrícula para el paciente que se convierte a activo
-      const nuevaMatricula = generarMatriculaNueva(paciente.id);
-      
-      const apiUrl = buildApiUrl(`/pacientes/${paciente.id}/convertir-activo`);
-      
-      // Enviar datos para la conversión incluyendo la nueva matrícula
-      const datosConversion = {
-        estado: 'Activo',
-        matricula: nuevaMatricula,
-        nombre: paciente.nombre,
-        apellido_paterno: paciente.apellido_paterno,
-        apellido_materno: paciente.apellido_materno,
-        fecha_nacimiento: paciente.fecha_nacimiento,
-        telefono: paciente.telefono,
-        sexo: paciente.sexo
-      };
-      
-      const response = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(datosConversion)
-      });
-            
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Error en conversión:', errorText);
-        throw new Error(`Error al convertir paciente: ${response.statusText}`);
-      }
-      
-      const resultado = await response.json();
-      
-      // ❌ ELIMINAR ALERT DE ÉXITO
-      // alert(`✅ Paciente convertido exitosamente!...`);
-      console.log('✅ Paciente convertido exitosamente:', resultado);
-      
-      // Recargar lista de pacientes
-      await cargarPacientes();
-      
-    } catch (error) {
-      console.error('❌ Error al convertir paciente:', error);
-      // ❌ ELIMINAR ALERT DE ERROR TAMBIÉN
-      // alert(`❌ Error al convertir paciente: ${error.message}`);
-    } finally {
-      setAccionEnProceso(null);
+const convertirPacientePermanente = async (paciente) => {
+  try {
+    setAccionEnProceso(`converting-${paciente.id}`);
+    
+    // Generar nueva matrícula para el paciente que se convierte a activo
+    const nuevaMatricula = generarMatriculaNueva(paciente.id);
+    
+    const apiUrl = buildApiUrl(`/pacientes/${paciente.id}/convertir-activo`);
+    
+    // Enviar datos para la conversión incluyendo la nueva matrícula
+    const datosConversion = {
+      estado: 'Activo',
+      matricula: nuevaMatricula,
+      nombre: paciente.nombre,
+      apellido_paterno: paciente.apellido_paterno,
+      apellido_materno: paciente.apellido_materno,
+      fecha_nacimiento: paciente.fecha_nacimiento,
+      telefono: paciente.telefono,
+      sexo: paciente.sexo
+    };
+    
+    const response = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(datosConversion)
+    });
+          
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error en conversión:', errorText);
+      throw new Error(`Error al convertir paciente: ${response.statusText}`);
     }
-  };
+    
+    const resultado = await response.json();
+    
+    console.log('✅ Paciente convertido exitosamente:', resultado);
+    
+    // ✅ MOSTRAR MODAL DE ÉXITO
+    setModalConversionExito({
+      isOpen: true,
+      pacienteData: {
+        nombre: paciente.nombre,
+        apellido_paterno: paciente.apellido_paterno
+      }
+    });
+    
+    // Recargar lista de pacientes
+    await cargarPacientes();
+    
+  } catch (error) {
+    console.error('❌ Error al convertir paciente:', error);
+    alert(`❌ Error al convertir paciente: ${error.message}`);
+  } finally {
+    setAccionEnProceso(null);
+  }
+};
 
   // FUNCIÓN PARA ABRIR MODAL DE EDITAR PACIENTE
   const handleEditarPaciente = async (paciente) => {
@@ -279,61 +291,56 @@ const Pacientes = () => {
     setPacienteParaConvertir(null);
   };
 
-  // 🔄 FUNCIÓN CORREGIDA PARA MANEJAR ACTUALIZACIÓN DE PACIENTE
-  const handlePacienteActualizado = useCallback(async (resultado) => {    
-    try {
-      if (resultado.success) {
-        
-        // Mostrar mensaje de éxito detallado
-        const mensaje = [
-          '✅ ¡Paciente actualizado exitosamente!',
-          '',
-          `📋 ID: ${resultado.id}`,
-          `🔧 Campos actualizados: ${resultado.campos_actualizados?.length || 0}`,
-          `📝 Detalles: ${resultado.campos_actualizados?.join(', ') || 'N/A'}`,
-          '',
-          '🔄 La lista se actualizará automáticamente...'
-        ].join('\n');
-                
-        // PROCESO DE ACTUALIZACIÓN MEJORADO
-        
-        // 1. Cerrar modal inmediatamente
-        setModalEditarOpen(false);
-        setPacienteSeleccionado(null);
-        
-        // 2. Limpiar filtros para asegurar que se vea el paciente actualizado
-        setBusqueda('');
-        setOrdenPor('nombre'); // Resetear a orden por defecto
-        
-        // 3. Forzar recarga con un pequeño delay
-        setTimeout(async () => {
-          
-          try {
-            await cargarPacientes();
-            
-          } catch (errorRecarga) {
+// 🔄 FUNCIÓN CORREGIDA PARA MANEJAR ACTUALIZACIÓN DE PACIENTE
+const handlePacienteActualizado = useCallback(async (resultado) => {    
+  try {
+    if (resultado.success) {
+      
+      // 1. Cerrar modal inmediatamente
+      setModalEditarOpen(false);
+      setPacienteSeleccionado(null);
+      
+      // 2. Detectar si es paciente temporal
+      const esPacienteTemporal = pacienteSeleccionado?.es_temporal || 
+                                pacienteSeleccionado?.tipo_paciente === 'Temporal' ||
+                                pacienteSeleccionado?.estado === 'Temporal';
+      
+      // 3. Mostrar modal con tipo correcto
+      const tipoModal = esPacienteTemporal ? 'temporal-actualizado' : 'actualizado';
+      handleMostrarExito(resultado, tipoModal);
+      
+      // 4. Limpiar filtros para asegurar que se vea el paciente actualizado
+      setBusqueda('');
+      setOrdenPor('nombre');
+      
+      // 5. Forzar recarga con un pequeño delay
+      setTimeout(async () => {
+        try {
+          await cargarPacientes();
+        } catch (errorRecarga) {
           console.error('❌ Error al recargar pacientes:', errorRecarga);
         }
       }, 200);
-        
-      } else {        
-        const mensajeError = [
-          '❌ Error al actualizar paciente:',
-          '',
-          resultado.error || 'Error desconocido',
-          '',
-          resultado.details || '',
-          '',
-          '🔍 Revisa los datos e intenta nuevamente.'
-        ].join('\n');
-        
-        alert(mensajeError);
-      }
       
-    } catch (error) {
+    } else {        
+      const mensajeError = [
+        '❌ Error al actualizar paciente:',
+        '',
+        resultado.error || 'Error desconocido',
+        '',
+        resultado.details || '',
+        '',
+        '🔍 Revisa los datos e intenta nuevamente.'
+      ].join('\n');
+      
+      alert(mensajeError);
     }
     
-  }, [cargarPacientes]);
+  } catch (error) {
+    console.error('❌ Error en handlePacienteActualizado:', error);
+  }
+  
+}, [cargarPacientes, pacienteSeleccionado]);
 
   // FUNCIÓN CORREGIDA PARA VER HISTORIAL CLÍNICO
   const verHistorialClinico = useCallback((pacienteId) => {
@@ -758,6 +765,15 @@ const Pacientes = () => {
         position="top-left"
       />
 
+      {/* ✅ MODAL DE CONVERSIÓN EXITOSA - POSICIÓN SUPERIOR DERECHA */}
+      <PacienteConvertidoSuccessModal
+        isOpen={modalConversionExito.isOpen}
+        onClose={() => setModalConversionExito({ isOpen: false, pacienteData: {} })}
+        pacienteData={modalConversionExito.pacienteData}
+        autoClose={true}
+        autoCloseDelay={3000}
+      />
+
       {/* ✅ MODAL DE ÉXITO - POSICIÓN SUPERIOR DERECHA */}
       <PacienteRegistradoModal
         isOpen={modalExito.isOpen}
@@ -766,6 +782,17 @@ const Pacientes = () => {
         autoClose={true}
         autoCloseDelay={3000} // ✅ CAMBIO A 3 SEGUNDOS
       />
+
+      {/* ✅ MODAL DE ÉXITO - POSICIÓN SUPERIOR DERECHA */}
+      <PacienteRegistradoModal
+        isOpen={modalExito.isOpen}
+        onClose={handleCerrarExito}
+        pacienteData={modalExito.pacienteData}
+        tipo={modalExito.tipo || 'registrado'}
+        autoClose={true}
+        autoCloseDelay={3000}
+      />
+
     </div>
   );
 };

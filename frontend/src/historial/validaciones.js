@@ -299,6 +299,63 @@ export const validarSeccionExamenIntrabucal = (datos) => {
   };
 };
 
+export const validarSeccionOclusion = (datos) => {
+  const errores = {};
+  
+  // Contar subsecciones completadas
+  let seccionesCompletas = 0;
+  
+  // Odontograma
+  if (datos?.odontograma && contarCamposCompletos(datos.odontograma) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Armonía de maxilares
+  if (datos?.armonia_maxilares && contarCamposCompletos(datos.armonia_maxilares) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Simetría del arco
+  if (datos?.simetria_arco && contarCamposCompletos(datos.simetria_arco) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Clasificación de Angle
+  if (datos?.clasificacion_angle && contarCamposCompletos(datos.clasificacion_angle) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Examen de higiene oral (O'Leary)
+  if (datos?.examen_higiene_oral && contarCamposCompletos(datos.examen_higiene_oral) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Encías detallado
+  if (datos?.encias_detallado && contarCamposCompletos(datos.encias_detallado) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Examen dental
+  if (datos?.examen_dental && contarCamposCompletos(datos.examen_dental) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Periodontograma
+  if (datos?.periodontograma && contarCamposCompletos(datos.periodontograma) > 0) {
+    seccionesCompletas++;
+  }
+  
+  // Si tiene al menos 2 subsecciones con datos, considerarlo válido
+  if (seccionesCompletas < 2) {
+    errores.general = 'Debe completar al menos 2 subsecciones del examen de oclusión';
+  }
+  
+  return {
+    esValido: Object.keys(errores).length === 0,
+    errores
+  };
+};
+
 export const validarSeccionAuxiliaresDiagnostico = (datos) => {
   const errores = {};
   
@@ -339,6 +396,8 @@ export const validarSeccion = (numeroSeccion, datos) => {
       case 7:
         return validarSeccionExamenIntrabucal(datos);
       case 8:
+        return validarSeccionOclusion(datos);
+      case 9: 
         return validarSeccionAuxiliaresDiagnostico(datos);
       default:
         return { esValido: true, errores: {} };
@@ -357,16 +416,17 @@ export const validarHistorialCompleto = (datosCompletos) => {
   
   try {
     // Validar cada sección
-    const secciones = [
-      { numero: 1, nombre: 'Ficha Identificación', datos: datosCompletos?.fichaIdentificacion },
-      { numero: 2, nombre: 'Motivo Consulta', datos: datosCompletos?.motivoConsulta },
-      { numero: 3, nombre: 'Ant. Heredo-Familiares', datos: datosCompletos?.antecedentesHeredoFamiliares },
-      { numero: 4, nombre: 'Ant. Pers. No Patológicos', datos: datosCompletos?.antecedentesPersonalesNoPatologicos },
-      { numero: 5, nombre: 'Ant. Pers. Patológicos', datos: datosCompletos?.antecedentesPersonalesPatologicos },
-      { numero: 6, nombre: 'Examen Extrabucal', datos: datosCompletos?.examenExtrabucal },
-      { numero: 7, nombre: 'Examen Intrabucal', datos: datosCompletos?.examenIntrabucal },
-      { numero: 8, nombre: 'Auxiliares Diagnóstico', datos: datosCompletos?.auxiliaresDiagnostico }
-    ];
+      const secciones = [
+        { numero: 1, nombre: 'Ficha Identificación', datos: datosCompletos?.fichaIdentificacion },
+        { numero: 2, nombre: 'Motivo Consulta', datos: datosCompletos?.motivoConsulta },
+        { numero: 3, nombre: 'Ant. Heredo-Familiares', datos: datosCompletos?.antecedentesHeredoFamiliares },
+        { numero: 4, nombre: 'Ant. Pers. No Patológicos', datos: datosCompletos?.antecedentesPersonalesNoPatologicos },
+        { numero: 5, nombre: 'Ant. Pers. Patológicos', datos: datosCompletos?.antecedentesPersonalesPatologicos },
+        { numero: 6, nombre: 'Examen Extrabucal', datos: datosCompletos?.examenExtrabucal },
+        { numero: 7, nombre: 'Examen Intrabucal', datos: datosCompletos?.examenIntrabucal },
+        { numero: 8, nombre: 'Oclusión', datos: datosCompletos?.oclusion },  // ← NUEVA LÍNEA
+        { numero: 9, nombre: 'Auxiliares Diagnóstico', datos: datosCompletos?.auxiliaresDiagnostico }  // ← MOVIDO AL 9
+      ];
     
     secciones.forEach(seccion => {
       const validacion = validarSeccion(seccion.numero, seccion.datos);

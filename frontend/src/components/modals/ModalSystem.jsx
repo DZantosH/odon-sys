@@ -496,6 +496,7 @@ export const SuccessNotificationModal = ({
   );
 };
 
+
 // 🗑️ MODAL ESPECIALIZADO PARA CONFIRMACIÓN DE CITA CANCELADA
 export const CitaCanceladaSuccessModal = ({ 
   isOpen, 
@@ -518,6 +519,89 @@ export const CitaCanceladaSuccessModal = ({
       autoCloseDelay={autoCloseDelay}
       icon="🗑️"
     />
+  );
+};
+
+// 🔄 MODAL ESPECIALIZADO PARA CONVERSIÓN DE PACIENTE TEMPORAL A ACTIVO
+export const PacienteConvertidoSuccessModal = ({ 
+  isOpen, 
+  onClose, 
+  pacienteData = {},
+  autoClose = true,
+  autoCloseDelay = 3000 
+}) => {
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    let timer;
+    if (isOpen && autoClose) {
+      timer = setTimeout(() => {
+        handleClose();
+      }, autoCloseDelay);
+    }
+    
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isOpen, autoClose, autoCloseDelay]);
+
+  const handleClose = useCallback(() => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setIsClosing(false);
+    }, 300);
+  }, [onClose]);
+
+  const handleOverlayClick = (e) => {
+    if (e.target.classList.contains('success-backdrop')) {
+      handleClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const mensaje = pacienteData.nombre 
+    ? `${pacienteData.nombre} ha sido convertido a paciente activo`
+    : "Paciente convertido exitosamente";
+
+  return (
+    <>
+      {/* Backdrop sutil */}
+      <div 
+        className="success-backdrop"
+        onClick={handleOverlayClick}
+      />
+      
+      {/* Modal de conversión exitosa */}
+      <div className={`simple-success-modal ${isClosing ? 'modal-closing' : 'modal-open'}`}>
+        <div className="simple-success-content">
+          {/* Icono y mensaje */}
+          <div className="simple-success-header">
+            <div className="simple-success-icon">✅</div>
+            <div className="simple-success-text">
+              <div className="simple-success-title">Se ha cambiado correctamente</div>
+              <div className="simple-success-message">{mensaje}</div>
+            </div>
+            <button className="simple-success-close" onClick={handleClose}>
+              ✕
+            </button>
+          </div>
+          
+          {/* Barra de progreso si es auto-close */}
+          {autoClose && (
+            <div className="simple-success-progress-container">
+              <div 
+                className="simple-success-progress-bar"
+                style={{
+                  animation: `progressBar ${autoCloseDelay}ms linear`
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 

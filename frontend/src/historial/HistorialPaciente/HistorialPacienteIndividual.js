@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { buildApiUrl } from '../../config/config.js';
 import { useAuth } from '../../services/AuthContext.js';
-import ConfirmacionModalEstudio, { useConfirmacionEstudio } from '../../components/ConfirmacionModalEstudio.jsx';
+import ConfirmacionModalEstudio, { useConfirmacionEstudio } from '../../components/modals/confirmacion/ConfirmacionModalEstudio.jsx';
 import RadiografiasSection from './RadiografiasSection.js';
 import CitasHistorialSection from './CitasHistorialSection.js';
 import ConsultaActual from './ConsultaActual.js';
@@ -187,8 +187,8 @@ const ModalNuevoEstudio = React.memo(({
 
 const HistorialPacienteIndividual = () => {
   const { pacienteId } = useParams();
-  const navigate = useNavigate(); // ✅ CORREGIDO: Hook importado correctamente
-  const location = useLocation(); // ✅ CORREGIDO: Hook importado correctamente
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { confirmacion, mostrarConfirmacion, ocultarConfirmacion } = useConfirmacionEstudio();
 
@@ -201,7 +201,7 @@ const HistorialPacienteIndividual = () => {
   const [historialSeleccionado, setHistorialSeleccionado] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [vistaActiva, setVistaActiva] = useState('historial'); // ✅ CORREGIDO: useState definido correctamente
+  const [vistaActiva, setVistaActiva] = useState('resumen');
 
   // Estados para las nuevas secciones
   const [estudiosLaboratorio, setEstudiosLaboratorio] = useState([]);
@@ -216,27 +216,24 @@ const HistorialPacienteIndividual = () => {
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [modalFotoOpen, setModalFotoOpen] = useState(false);
 
-  // ✅ ESTADOS PARA LOADING DENTAL - AGREGAR ESTOS
-const [showDentalLoading, setShowDentalLoading] = useState(false);
-const [loadingMessage, setLoadingMessage] = useState("Preparando consulta...");
-const [loadingSubmessage, setLoadingSubmessage] = useState("Cargando información del paciente");
+  // Estados para loading dental
+  const [showDentalLoading, setShowDentalLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("Preparando consulta...");
+  const [loadingSubmessage, setLoadingSubmessage] = useState("Cargando información del paciente");
 
   console.log('🆔 pacienteId:', pacienteId, 'tipo:', typeof pacienteId);
   console.log('📊 Vista activa:', vistaActiva);
   
   const idInvalido = !pacienteId || pacienteId === 'undefined';
 
+  // Efecto para detectar navegación
 useEffect(() => {
   console.log('🔍 [DEBUG] useEffect ejecutándose...');
   const estadoNavegacion = location.state;
   console.log('🔍 [DEBUG] Estado de navegación COMPLETO:', estadoNavegacion);
-  console.log('🔍 [DEBUG] location.state:', location.state);
-  console.log('🔍 [DEBUG] origen:', estadoNavegacion?.origen);
-  console.log('🔍 [DEBUG] consultaIniciada:', estadoNavegacion?.consultaIniciada);
   
   if (estadoNavegacion) {
     console.log('🧭 Navegación detectada desde:', estadoNavegacion.origen);
-    console.log('📋 Estado de navegación:', estadoNavegacion);
     
     // MOSTRAR LOADING DENTAL SI VIENE DE CITAS DEL DÍA
     if (estadoNavegacion.origen === 'citas-del-dia' && estadoNavegacion.consultaIniciada) {
@@ -244,29 +241,30 @@ useEffect(() => {
       setShowDentalLoading(true);
       setLoadingMessage("Iniciando consulta odontológica");
       setLoadingSubmessage(`Preparando historial de ${estadoNavegacion.paciente?.nombre || 'paciente'}`);
-    } else {
-      console.log('❌ [DEBUG] No se cumple la condición para loading dental');
-      console.log('❌ [DEBUG] origen es "citas-del-dia"?', estadoNavegacion.origen === 'citas-del-dia');
-      console.log('❌ [DEBUG] consultaIniciada es true?', estadoNavegacion.consultaIniciada === true);
     }
     
-    // CAMBIAR VISTA INICIAL DESPUÉS DEL LOADING DENTAL
+    // CAMBIAR VISTA INICIAL DESPUÉS DEL LOADING DENTAL - SIN BUCLES
     if (estadoNavegacion.vistaInicial) {
       console.log('🎯 Cambiando a vista inicial:', estadoNavegacion.vistaInicial);
+      
+      // Mapear 'historial' a 'resumen' directamente
+      let vistaFinal = estadoNavegacion.vistaInicial;
+      if (vistaFinal === 'historial') {
+        vistaFinal = 'resumen';
+      }
+      
       setTimeout(() => {
-        setVistaActiva(estadoNavegacion.vistaInicial);
+        setVistaActiva(vistaFinal);
       }, estadoNavegacion.consultaIniciada ? 3500 : 0);
     }
     
     if (estadoNavegacion.consultaIniciada) {
       console.log('🩺 Consulta iniciada - configurando experiencia de bienvenida');
     }
-  } else {
-    console.log('❌ [DEBUG] No hay estado de navegación');
   }
 }, [location.state]);
 
-  // ✅ FUNCIÓN PARA MANEJAR NAVEGACIÓN DE REGRESO - AGREGADA
+  // Función para manejar navegación de regreso
   const handleRegresarAPanel = useCallback(() => {
     const estadoNavegacion = location.state;
     
@@ -277,14 +275,13 @@ useEffect(() => {
     }
   }, [navigate, location.state]);
 
-  // ✅ FUNCIÓN PARA COMPLETAR LOADING DENTAL
-const handleDentalLoadingComplete = useCallback(() => {
-  console.log('✅ Loading dental completado');
-  setShowDentalLoading(false);
-}, []);
+  // Función para completar loading dental
+  const handleDentalLoadingComplete = useCallback(() => {
+    console.log('✅ Loading dental completado');
+    setShowDentalLoading(false);
+  }, []);
 
-  // === FUNCIONES DE UTILIDAD ===
-  
+  // Funciones de utilidad
   const generarIniciales = (paciente) => {
     if (!paciente) return 'MG';
     
@@ -302,6 +299,43 @@ const handleDentalLoadingComplete = useCallback(() => {
     };
   }, []);
 
+  const formatearFecha = useCallback((fecha) => {
+    if (!fecha) return 'No especificada';
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, []);
+
+  const formatearFechaHora = useCallback((fecha, hora) => {
+    if (!fecha) return 'No especificada';
+    const fechaFormateada = formatearFecha(fecha);
+    return hora ? `${fechaFormateada} a las ${hora}` : fechaFormateada;
+  }, [formatearFecha]);
+
+  const calcularEdad = useCallback((fechaNacimiento) => {
+    if (!fechaNacimiento) return 'No especificada';
+    
+    const hoy = new Date();
+    const nacimiento = new Date(fechaNacimiento);
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    const mes = hoy.getMonth() - nacimiento.getMonth();
+    
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--;
+    }
+    
+    return edad;
+  }, []);
+
+  // Función para limpiar texto
+  const limpiarTexto = (texto) => {
+    if (!texto || texto === 'undefined' || texto === 'null') return '';
+    return String(texto).trim();
+  };
+
+  // Función para cargar radiografías
   const cargarRadiografias = useCallback(async () => {
     try {
       setLoadingRadiografias(true);
@@ -333,6 +367,7 @@ const handleDentalLoadingComplete = useCallback(() => {
     }
   }, [pacienteId, getAuthHeaders]);
 
+  // Función para cargar estudios de laboratorio
   const cargarEstudiosLaboratorio = useCallback(async () => {
     try {
       setLoadingEstudios(true);
@@ -364,6 +399,7 @@ const handleDentalLoadingComplete = useCallback(() => {
     }
   }, [pacienteId, getAuthHeaders]);
 
+  // Función para cargar citas del historial
   const cargarCitasHistorial = useCallback(async () => {
     try {
       setLoadingCitas(true);
@@ -420,7 +456,166 @@ const handleDentalLoadingComplete = useCallback(() => {
       setLoadingCitas(false);
     }
   }, [pacienteId, getAuthHeaders]);
+  
 
+  // Función para cargar historial clínico
+  const cargarHistorialClinico = useCallback(async () => {
+    try {
+      console.log('📋 === CARGANDO HISTORIAL CLÍNICO ===');
+      console.log('🆔 Paciente ID:', pacienteId, 'tipo:', typeof pacienteId);
+      
+      if (!pacienteId || pacienteId === 'undefined') {
+        console.error('❌ ID de paciente inválido:', pacienteId);
+        setHistorial([]);
+        return;
+      }
+
+      // Usar el servicio corregido
+      const historialArray = await cargarHistorialPaciente(pacienteId);
+      
+      console.log('📊 Historiales cargados:', historialArray.length);
+      
+      if (historialArray.length > 0) {
+        console.log('✅ ¡HISTORIALES ENCONTRADOS!');
+        console.log('📋 Primer historial:', historialArray[0]);
+        
+        // Ordenar por fecha
+        historialArray.sort((a, b) => {
+          const fechaA = new Date(a.fecha_consulta || a.created_at);
+          const fechaB = new Date(b.fecha_consulta || b.created_at);
+          return fechaB - fechaA;
+        });
+        
+        setHistorial(historialArray);
+        setHistorialSeleccionado(historialArray[0]);
+      } else {
+        console.log('⚠️ No se encontraron historiales');
+        setHistorial([]);
+        
+        // Ejecutar debug para ver qué pasa
+        const debug = await debugHistorialPaciente(pacienteId);
+        if (debug) {
+          console.log('🔍 Info de debug:', debug);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al cargar historial clínico:', error);
+      setHistorial([]);
+    }
+  }, [pacienteId]);
+
+  const guardarDiagnosticoTratamiento = useCallback(async () => {
+  try {
+    const diagnosticoInput = document.getElementById('diagnostico-input');
+    const tratamientoInput = document.getElementById('tratamiento-input');
+    
+    const diagnostico = diagnosticoInput?.value?.trim();
+    const tratamiento = tratamientoInput?.value?.trim();
+    
+    if (!diagnostico && !tratamiento) {
+      alert('⚠️ Por favor complete al menos el diagnóstico o el tratamiento');
+      return;
+    }
+    
+    if (!historialSeleccionado?.id) {
+      alert('❌ Error: No se puede identificar el historial a actualizar');
+      return;
+    }
+    
+    console.log('💾 Guardando diagnóstico y tratamiento...');
+    
+    const response = await fetch(buildApiUrl(`/historiales-clinicos/${historialSeleccionado.id}/diagnostico-tratamiento`), {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        diagnostico: diagnostico || null,
+        tratamiento: tratamiento || null,
+        updated_by: user?.id
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    }
+    
+    const resultado = await response.json();
+    console.log('✅ Diagnóstico y tratamiento guardados:', resultado);
+    
+    // Actualizar el historial seleccionado con los nuevos datos
+    setHistorialSeleccionado(prev => ({
+      ...prev,
+      diagnostico: diagnostico,
+      tratamiento: tratamiento,
+      updated_at: new Date().toISOString()
+    }));
+    
+    // Recargar el historial completo para mantener consistencia
+    await cargarHistorialClinico();
+    
+    // Mostrar confirmación visual
+    diagnosticoInput.classList.add('success');
+    tratamientoInput.classList.add('success');
+    
+    setTimeout(() => {
+      diagnosticoInput?.classList.remove('success');
+      tratamientoInput?.classList.remove('success');
+    }, 2000);
+    
+    if (mostrarConfirmacion) {
+      await mostrarConfirmacion({
+        type: 'success',
+        title: '✅ Diagnóstico y Tratamiento Guardados',
+        message: 'La información ha sido actualizada exitosamente en el historial clínico.',
+        details: {
+          diagnostico: diagnostico || 'No especificado',
+          tratamiento: tratamiento || 'No especificado',
+          fecha_actualizacion: new Date().toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        },
+        confirmText: 'Perfecto',
+        showCancel: false
+      });
+    } else {
+      alert('✅ Diagnóstico y tratamiento guardados exitosamente');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error al guardar diagnóstico y tratamiento:', error);
+    
+    // Mostrar error visual
+    const diagnosticoInput = document.getElementById('diagnostico-input');
+    const tratamientoInput = document.getElementById('tratamiento-input');
+    
+    diagnosticoInput?.classList.add('error');
+    tratamientoInput?.classList.add('error');
+    
+    setTimeout(() => {
+      diagnosticoInput?.classList.remove('error');
+      tratamientoInput?.classList.remove('error');
+    }, 3000);
+    
+    if (mostrarConfirmacion) {
+      await mostrarConfirmacion({
+        type: 'error',
+        title: '❌ Error al Guardar',
+        message: `No se pudo guardar el diagnóstico y tratamiento: ${error.message}`,
+        confirmText: 'Entendido',
+        showCancel: false
+      });
+    } else {
+      alert(`❌ Error al guardar: ${error.message}`);
+    }
+  }
+}, [historialSeleccionado?.id, user?.id, buildApiUrl, getAuthHeaders, cargarHistorialClinico, mostrarConfirmacion]);
+
+  // Efecto para auto-actualizar citas
   useEffect(() => {
     if (vistaActiva !== 'citas' || citasHistorial.length === 0) return;
     
@@ -432,172 +627,139 @@ const handleDentalLoadingComplete = useCallback(() => {
     return () => clearInterval(intervalo);
   }, [vistaActiva, citasHistorial.length, cargarCitasHistorial]);
 
-const cargarHistorialClinico = useCallback(async () => {
-  try {
-    console.log('📋 === CARGANDO HISTORIAL CLÍNICO ===');
-    console.log('🆔 Paciente ID:', pacienteId, 'tipo:', typeof pacienteId);
-    
+  // Efecto principal para cargar datos
+useEffect(() => {
+  const cargarDatos = async () => {
     if (!pacienteId || pacienteId === 'undefined') {
-      console.error('❌ ID de paciente inválido:', pacienteId);
-      setHistorial([]);
+      console.log('❌ ID de paciente inválido:', pacienteId);
+      setLoading(false);
       return;
     }
 
-    // ✅ USAR EL SERVICIO CORREGIDO
-    const historialArray = await cargarHistorialPaciente(pacienteId);
-    
-    console.log('📊 Historiales cargados:', historialArray.length);
-    
-    if (historialArray.length > 0) {
-      console.log('✅ ¡HISTORIALES ENCONTRADOS!');
-      console.log('📋 Primer historial:', historialArray[0]);
+    try {
+      setLoading(true);
+      setError(null);
       
-      // Ordenar por fecha
-      historialArray.sort((a, b) => {
-        const fechaA = new Date(a.fecha_consulta || a.created_at);
-        const fechaB = new Date(b.fecha_consulta || b.created_at);
-        return fechaB - fechaA;
+      console.log('🚀 Iniciando carga de datos para paciente:', pacienteId);
+      
+      console.log('🔍 Cargando datos del paciente desde API...');
+      
+      const pacienteResponse = await fetch(buildApiUrl(`/pacientes/${pacienteId}`), {
+        headers: getAuthHeaders()
       });
       
-      setHistorial(historialArray);
-      setHistorialSeleccionado(historialArray[0]);
-    } else {
-      console.log('⚠️ No se encontraron historiales');
-      setHistorial([]);
+      console.log('📡 Respuesta API paciente:', pacienteResponse.status);
       
-      // ✅ EJECUTAR DEBUG PARA VER QUÉ PASA
-      const debug = await debugHistorialPaciente(pacienteId);
-      if (debug) {
-        console.log('🔍 Info de debug:', debug);
-      }
-    }
-    
-  } catch (error) {
-    console.error('❌ Error al cargar historial clínico:', error);
-    setHistorial([]);
-  }
-}, [pacienteId]);
-
-// ✅ AGREGAR FUNCIÓN DE DEBUG EN EL BOTÓN "Debug Info"
-const handleDebugInfo = async () => {
-  console.log('🔍 === EJECUTANDO DEBUG ===');
-  
-  const debug = await debugHistorialPaciente(pacienteId);
-  
-  if (debug) {
-    const mensaje = `
-🔍 DEBUG HISTORIAL PACIENTE ${pacienteId}
-
-👤 Paciente existe: ${debug.paciente.existe ? 'SÍ' : 'NO'}
-📋 Historiales en BD: ${debug.historial_clinico.count}
-
-${debug.historial_clinico.count === 0 ? 
-  '❌ PROBLEMA: No hay historiales en la base de datos\n💡 SOLUCIÓN: Completar un nuevo historial clínico' :
-  '✅ DATOS ENCONTRADOS en la base de datos\n📋 Frontend debería mostrar estos historiales'
-}
-
-🔗 Endpoints disponibles:
-• Guardar: ${debug.endpoints_disponibles.guardar}
-• Obtener: ${debug.endpoints_disponibles.obtener}
-• Debug: ${debug.endpoints_disponibles.debug}
-
-📊 Datos en BD:
-${JSON.stringify(debug.historial_clinico.data, null, 2)}
-    `;
-    
-    alert(mensaje);
-    console.log('🔍 Debug completo:', debug);
-  } else {
-    alert('❌ No se pudo obtener información de debug');
-  }
-};
-
-  // ✅ AGREGAR DEPENDENCIAS FALTANTES AL useEffect
-  useEffect(() => {
-    const cargarDatos = async () => {
-      if (!pacienteId || pacienteId === 'undefined') {
-        console.log('❌ ID de paciente inválido:', pacienteId);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
+      if (pacienteResponse.ok) {
+        const pacienteData = await pacienteResponse.json();
         
-        console.log('🚀 Iniciando carga de datos para paciente:', pacienteId);
+        console.log('🔍 === DATOS DESDE API ===');
+        console.log('📋 Paciente completo:', JSON.stringify(pacienteData, null, 2));
         
-        console.log('🔍 Cargando datos del paciente desde API...');
-        
-        const pacienteResponse = await fetch(buildApiUrl(`/pacientes/${pacienteId}`), {
-          headers: getAuthHeaders()
-        });
-        
-        console.log('📡 Respuesta API paciente:', pacienteResponse.status);
-        
-        if (pacienteResponse.ok) {
-          const pacienteData = await pacienteResponse.json();
-          
-          console.log('🔍 === DATOS DESDE API ===');
-          console.log('📋 Paciente completo:', JSON.stringify(pacienteData, null, 2));
-          console.log('🏠 calle_numero:', pacienteData.calle_numero);
-          console.log('🆔 numero_seguridad_social:', pacienteData.numero_seguridad_social);
-          console.log('📋 matricula:', pacienteData.matricula);
-          console.log('🔍 === FIN DEBUG API ===');
-          
-          setPaciente(pacienteData);
-        } else {
-          console.log('⚠️ Error al cargar datos del paciente');
-          if (pacienteDesdeBuscador) {
-            setPaciente(pacienteDesdeBuscador);
-          }
+        setPaciente(pacienteData);
+      } else {
+        console.log('⚠️ Error al cargar datos del paciente');
+        if (pacienteDesdeBuscador) {
+          setPaciente(pacienteDesdeBuscador);
         }
-        
-        await cargarHistorialClinico();
-        
-        await Promise.all([
-          cargarRadiografias(),
-          cargarEstudiosLaboratorio(),
-          cargarCitasHistorial()
-        ]);
-        
-      } catch (err) {
-        console.error('❌ Error al cargar datos:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
       }
-    };
+      
+      await cargarHistorialClinico();
+      
+      await Promise.all([
+        cargarRadiografias(),
+        cargarEstudiosLaboratorio(),
+        cargarCitasHistorial()
+      ]);
+      
+      // ELIMINAR ESTA PARTE QUE CAUSABA EL BUCLE:
+      // if (vistaActiva === 'historial') {
+      //   setVistaActiva('resumen');
+      // }
+      
+    } catch (err) {
+      console.error('❌ Error al cargar datos:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    cargarDatos();
-  }, [
-    pacienteId, 
-    pacienteDesdeBuscador, // ✅ AGREGADO
-    getAuthHeaders, 
-    cargarHistorialClinico, 
-    cargarRadiografias, 
-    cargarEstudiosLaboratorio, 
-    cargarCitasHistorial
-  ]);
+  cargarDatos();
+}, [
+  pacienteId, 
+  pacienteDesdeBuscador,
+  getAuthHeaders, 
+  cargarHistorialClinico, 
+  cargarRadiografias, 
+  cargarEstudiosLaboratorio, 
+  cargarCitasHistorial
+  // ELIMINAR vistaActiva de las dependencias
+]);
 
-  // Resto de las funciones permanecen igual...
-  const formatearFecha = useCallback((fecha) => {
-    if (!fecha) return 'No especificada';
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+
+  // Función para parsear datos JSON de manera segura
+  const parsearDatosJSON = useCallback((datos, fallback = {}) => {
+    try {
+      if (!datos) return fallback;
+      if (typeof datos === 'string' && datos.startsWith('{')) {
+        return JSON.parse(datos);
+      }
+      if (typeof datos === 'object' && datos !== null) {
+        return datos;
+      }
+      return fallback;
+    } catch (error) {
+      console.warn('Error parseando JSON:', error);
+      return fallback;
+    }
   }, []);
 
-  const formatearFechaHora = useCallback((fecha, hora) => {
-    if (!fecha) return 'No especificada';
-    const fechaFormateada = formatearFecha(fecha);
-    return hora ? `${fechaFormateada} a las ${hora}` : fechaFormateada;
-  }, [formatearFecha]);
+  // Función para renderizar campo con validación
+  const renderCampo = useCallback((etiqueta, valor, tipo = 'texto') => {
+    const valorLimpio = limpiarTexto(valor);
+    if (!valorLimpio) return null;
 
-  // ✅ RESTO DEL COMPONENTE PERMANECE IGUAL...
-  // (Las demás funciones están correctas, solo necesitaban las correcciones de arriba)
+    return (
+      <div className="campo-historial" key={etiqueta}>
+        <strong className="campo-etiqueta">{etiqueta}:</strong>
+        <span className="campo-valor">{valorLimpio}</span>
+      </div>
+    );
+  }, []);
+
+  // Función para renderizar lista
+  const renderLista = useCallback((etiqueta, items) => {
+    if (!items || !Array.isArray(items) || items.length === 0) return null;
+    
+    return (
+      <div className="campo-historial" key={etiqueta}>
+        <strong className="campo-etiqueta">{etiqueta}:</strong>
+        <ul className="lista-valores">
+          {items.map((item, index) => (
+            <li key={index}>{limpiarTexto(item)}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  }, []);
+
+  // Función para renderizar sección
+  const renderSeccion = useCallback((titulo, contenido, icono = '📋') => {
+    if (!contenido || (Array.isArray(contenido) && contenido.length === 0)) return null;
+
+    return (
+      <div className="seccion-historial-completa" key={titulo}>
+        <h3 className="titulo-seccion-completa">
+          <span className="icono-seccion">{icono}</span>
+          {titulo}
+        </h3>
+        <div className="contenido-seccion-completa">
+          {contenido}
+        </div>
+      </div>
+    );
+  }, []);
 
   // Función para subir foto del avatar
   const subirFotoAvatar = useCallback(async (file) => {
@@ -663,7 +825,7 @@ ${JSON.stringify(debug.historial_clinico.data, null, 2)}
     event.target.value = '';
   }, [subirFotoAvatar]);
 
-  // Resto del componente...
+  // Función para renderizar avatar
   const renderAvatar = () => {
     console.log('🖼️ Renderizando avatar:', {
       foto_avatar: paciente?.foto_avatar,
@@ -725,28 +887,13 @@ ${JSON.stringify(debug.historial_clinico.data, null, 2)}
     );
   };
 
-  const calcularEdad = useCallback((fechaNacimiento) => {
-    if (!fechaNacimiento) return 'No especificada';
-    
-    const hoy = new Date();
-    const nacimiento = new Date(fechaNacimiento);
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    const mes = hoy.getMonth() - nacimiento.getMonth();
-    
-    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
-    
-    return edad;
-  }, []);
-
   // Función para renderizar el header minimalista
   const renderHeaderMinimalista = () => {
     if (!paciente) {
       return (
         <div className="header-paciente-minimalista">
           <button 
-            onClick={handleRegresarAPanel} // ✅ CORREGIDO: Usar función de navegación
+            onClick={handleRegresarAPanel}
             className="btn-regresar-minimalista"
           >
             ← Regresar
@@ -761,7 +908,7 @@ ${JSON.stringify(debug.historial_clinico.data, null, 2)}
     return (
       <div className="header-paciente-minimalista">
         <button 
-          onClick={handleRegresarAPanel} // ✅ CORREGIDO: Usar función de navegación
+          onClick={handleRegresarAPanel}
           className="btn-regresar-minimalista"
         >
           ← Regresar
@@ -895,86 +1042,86 @@ ${JSON.stringify(debug.historial_clinico.data, null, 2)}
   };
 
   // Función para solicitar nuevo estudio
-const solicitarNuevoEstudio = useCallback(async (formData) => {
-  try {
-    setSubmitLoading(true);
-    
-    if (!formData.tipo_estudio.trim()) {
-      throw new Error('El tipo de estudio es requerido');
-    }
+  const solicitarNuevoEstudio = useCallback(async (formData) => {
+    try {
+      setSubmitLoading(true);
+      
+      if (!formData.tipo_estudio.trim()) {
+        throw new Error('El tipo de estudio es requerido');
+      }
 
-    if (!pacienteId) {
-      throw new Error('ID de paciente no válido');
-    }
+      if (!pacienteId) {
+        throw new Error('ID de paciente no válido');
+      }
 
-    if (!user?.id) {
-      throw new Error('Usuario no autenticado');
-    }
+      if (!user?.id) {
+        throw new Error('Usuario no autenticado');
+      }
 
-    const response = await fetch(buildApiUrl('/estudios-laboratorio'), {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        ...formData,
-        paciente_id: parseInt(pacienteId),
-        doctor_id: user.id,
-        fecha_solicitud: new Date().toISOString().split('T')[0],
-        estado: 'pendiente'
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`);
-    }
-
-    const nuevoEstudio = await response.json();
-    console.log('✅ Estudio solicitado exitosamente:', nuevoEstudio);
-
-    await cargarEstudiosLaboratorio();
-
-    if (mostrarConfirmacion) {
-      await mostrarConfirmacion({
-        type: 'success',
-        title: '¡Estudio Solicitado!',
-        message: `El estudio "${nuevoEstudio.tipo_estudio}" ha sido solicitado exitosamente para el paciente.`,
-        details: {
-          tipo_estudio: nuevoEstudio.tipo_estudio,
-          laboratorio: formData.laboratorio_recomendado || 'No especificado',
-          urgencia: formData.urgencia,
-          fecha: new Date().toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          }),
-          estado: 'Pendiente'
-        },
-        confirmText: 'Aceptar',
-        cancelText: 'Ver Detalles',
-        showCancel: true
+      const response = await fetch(buildApiUrl('/estudios-laboratorio'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...formData,
+          paciente_id: parseInt(pacienteId),
+          doctor_id: user.id,
+          fecha_solicitud: new Date().toISOString().split('T')[0],
+          estado: 'pendiente'
+        })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const nuevoEstudio = await response.json();
+      console.log('✅ Estudio solicitado exitosamente:', nuevoEstudio);
+
+      await cargarEstudiosLaboratorio();
+
+      if (mostrarConfirmacion) {
+        await mostrarConfirmacion({
+          type: 'success',
+          title: '¡Estudio Solicitado!',
+          message: `El estudio "${nuevoEstudio.tipo_estudio}" ha sido solicitado exitosamente para el paciente.`,
+          details: {
+            tipo_estudio: nuevoEstudio.tipo_estudio,
+            laboratorio: formData.laboratorio_recomendado || 'No especificado',
+            urgencia: formData.urgencia,
+            fecha: new Date().toLocaleDateString('es-MX', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }),
+            estado: 'Pendiente'
+          },
+          confirmText: 'Aceptar',
+          cancelText: 'Ver Detalles',
+          showCancel: true
+        });
+      }
+
+      return true;
+
+    } catch (error) {
+      console.error('❌ Error al solicitar estudio:', error);
+      
+      if (mostrarConfirmacion) {
+        await mostrarConfirmacion({
+          type: 'error',
+          title: '❌ Error al Solicitar Estudio',
+          message: error.message,
+          confirmText: 'Entendido',
+          showCancel: false
+        });
+      }
+
+      return false;
+    } finally {
+      setSubmitLoading(false);
     }
-
-    return true; // ✅ IMPORTANTE: Retornar true en caso de éxito
-
-  } catch (error) {
-    console.error('❌ Error al solicitar estudio:', error);
-    
-    if (mostrarConfirmacion) {
-      await mostrarConfirmacion({
-        type: 'error',
-        title: '❌ Error al Solicitar Estudio',
-        message: error.message,
-        confirmText: 'Entendido',
-        showCancel: false
-      });
-    }
-
-    return false; // ✅ IMPORTANTE: Retornar false en caso de error
-  } finally {
-    setSubmitLoading(false);
-  }
-}, [pacienteId, user?.id, getAuthHeaders, cargarEstudiosLaboratorio, mostrarConfirmacion]);
+  }, [pacienteId, user?.id, getAuthHeaders, cargarEstudiosLaboratorio, mostrarConfirmacion]);
 
   // Función para actualizar estado de citas
   const actualizarEstadoCita = useCallback(async (citaId, nuevoEstado) => {
@@ -1082,6 +1229,22 @@ const solicitarNuevoEstudio = useCallback(async (formData) => {
     }
   }, [pacienteId, user?.id, getAuthHeaders, cargarRadiografias, mostrarConfirmacion]);
 
+  // Callback cuando se finaliza consulta
+  const onConsultaFinalizada = useCallback(async () => {
+    console.log('🏁 Consulta finalizada, actualizando datos...');
+    
+    try {
+      await Promise.all([
+        cargarHistorialClinico(),
+        cargarCitasHistorial(),
+      ]);
+      
+      console.log('✅ Datos actualizados después de finalizar consulta');
+    } catch (error) {
+      console.error('❌ Error al actualizar datos tras consulta:', error);
+    }
+  }, [cargarHistorialClinico, cargarCitasHistorial]);
+
   // Función para renderizar historial clínico
   const renderHistorialClinico = () => {
     if (historial.length === 0) {
@@ -1141,44 +1304,7 @@ const solicitarNuevoEstudio = useCallback(async (formData) => {
 
     return (
       <div className="historial-layout">
-        <div className="sidebar-historial">
-          <div className="sidebar-header">
-            <h3>📋 Historiales Clínicos ({historial.length})</h3>
-            <button 
-              className="btn-generar-pdf"
-              onClick={handleGenerarPDF}
-              disabled={!historialSeleccionado}
-              title={historialSeleccionado ? "Generar PDF del historial completo" : "Selecciona un historial para generar PDF"}
-            >
-              📄 {historialSeleccionado ? 'Generar PDF' : 'PDF'}
-            </button>
-          </div>
-          
-          <div className="lista-historiales">
-            {historial.map((registro) => (
-              <div
-                key={registro.id}
-                className={`item-historial ${historialSeleccionado?.id === registro.id ? 'activo' : ''}`}
-                onClick={() => setHistorialSeleccionado(registro)}
-              >
-                <div className="fecha-historial">
-                  {formatearFecha(registro.fecha_consulta)}
-                </div>
-                <div className="doctor-historial">
-                  Dr. {registro.doctor_nombre}
-                </div>
-                <div className="tipo-cita">
-                  {registro.tipo_cita || 'Consulta'}
-                </div>
-                <div className="estado-historial">
-                  <span className={`estado ${registro.estado}`}>
-                    {registro.estado}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        
 
         <div className="contenido-historial">
           {historialSeleccionado ? (
@@ -1188,9 +1314,6 @@ const solicitarNuevoEstudio = useCallback(async (formData) => {
                 <div className="info-consulta">
                   <span>👨‍⚕️ Dr. {historialSeleccionado.doctor_nombre}</span>
                   <span>📅 {historialSeleccionado.tipo_cita}</span>
-                  <span className={`estado ${historialSeleccionado.estado}`}>
-                    {historialSeleccionado.estado}
-                  </span>
                 </div>
               </div>
 
@@ -1219,6 +1342,15 @@ const solicitarNuevoEstudio = useCallback(async (formData) => {
                 >
                   📋 Vista Completa
                 </button>
+                <button
+                  className={vistaActiva === 'completo' ? 'activo' : ''}
+                  onClick={() => {
+                    const pdfUrl = `/pdfs/historial_${pacienteId}.pdf`; // Ajusta a tu backend
+                    window.open(pdfUrl, "_blank");
+                  }}
+                >
+                  📕 Abrir PDF
+                </button>
               </div>
 
               <div className="contenido-vista">
@@ -1239,1143 +1371,1073 @@ const solicitarNuevoEstudio = useCallback(async (formData) => {
     );
   };
 
-  // Función para renderizar el contenido original del historial
- // CORRECCIÓN PARA LOS ERRORES DE SINTAXIS
-// Busca la función renderContenidoHistorialOriginal y reemplázala COMPLETA por esta versión corregida:
-
+  // Función principal para renderizar el contenido del historial según la vista
 const renderContenidoHistorialOriginal = () => {
   if (!historialSeleccionado) return null;
 
-  // ✅ FUNCIÓN PARA PARSEAR DATOS JSON
-  const parsearDatosJSON = (datos, fallback = {}) => {
-    try {
-      if (typeof datos === 'string' && datos.startsWith('{')) {
-        return JSON.parse(datos);
-      }
-      if (typeof datos === 'object' && datos !== null) {
-        return datos;
-      }
-      return fallback;
-    } catch (error) {
-      console.warn('Error parseando JSON:', error);
-      return fallback;
-    }
-  };
+  // Parsear datos
+  const datosPersonales = parsearDatosJSON(historialSeleccionado.datos_personales);
+  const fichaIdentificacionData = parsearDatosJSON(historialSeleccionado.ficha_identificacion);
+  const motivoConsultaData = parsearDatosJSON(historialSeleccionado.motivo_consulta);
+  const antecedentesHFData = parsearDatosJSON(historialSeleccionado.antecedentes_heredo_familiares);
+  const antecedentesNPData = parsearDatosJSON(historialSeleccionado.antecedentes_personales_no_patologicos);
+  const antecedentesPPData = parsearDatosJSON(historialSeleccionado.antecedentes_personales_patologicos);
+  const examenExtrabucalData = parsearDatosJSON(historialSeleccionado.examen_extrabucal);
+  const examenIntrabucalData = parsearDatosJSON(historialSeleccionado.examen_intrabucal);
+  const oclusionData = parsearDatosJSON(historialSeleccionado.oclusion);
 
-  // ✅ FUNCIÓN MEJORADA PARA MOTIVO DE CONSULTA
-  const renderMotivoConsulta = () => {
-    const motivoData = parsearDatosJSON(historialSeleccionado.motivo_consulta, {});
 
-    return (
-      <div className="seccion-historial">
-        <h3>🗣️ Motivo de Consulta</h3>
-        <div className="contenido-seccion">
-          
-          {motivoData.motivo_principal && (
-            <div className="campo">
-              <strong>Motivo Principal:</strong>
-              <p>{motivoData.motivo_principal}</p>
-            </div>
-          )}
-
-          {(motivoData.descripcion && !motivoData.motivo_principal) && (
-            <div className="campo">
-              <strong>Descripción:</strong>
-              <p>{motivoData.descripcion}</p>
-            </div>
-          )}
-
-          {!motivoData.motivo_principal && !motivoData.descripcion && historialSeleccionado.motivo_consulta_texto && (
-            <div className="campo">
-              <strong>Descripción:</strong>
-              <p>{historialSeleccionado.motivo_consulta_texto}</p>
-            </div>
-          )}
-
-          {motivoData.padecimiento_actual && (
-            <div className="campo">
-              <strong>Padecimiento Actual:</strong>
-              <p>{motivoData.padecimiento_actual}</p>
-            </div>
-          )}
-
-          {(motivoData.inicio_sintomas || motivoData.tipo_dolor || motivoData.intensidad_dolor || motivoData.urgencia || motivoData.evolucion) && (
-            <div className="sintomas-grid">
-              {motivoData.inicio_sintomas && (
-                <div className="campo-inline">
-                  <strong>Inicio:</strong>
-                  <span>{motivoData.inicio_sintomas}</span>
-                </div>
-              )}
-
-              {motivoData.tipo_dolor && (
-                <div className="campo-inline">
-                  <strong>Tipo de dolor:</strong>
-                  <span>{motivoData.tipo_dolor}</span>
-                </div>
-              )}
-
-              {motivoData.intensidad_dolor && (
-                <div className="campo-inline">
-                  <strong>Intensidad:</strong>
-                  <span>{motivoData.intensidad_dolor}/10</span>
-                </div>
-              )}
-
-              {motivoData.urgencia && (
-                <div className="campo-inline">
-                  <strong>Urgencia:</strong>
-                  <span className={`urgencia-${motivoData.urgencia}`}>
-                    {motivoData.urgencia === 'alta' ? '🔴 Alta' : 
-                     motivoData.urgencia === 'media' ? '🟡 Media' : 
-                     motivoData.urgencia === 'baja' ? '🟢 Baja' : motivoData.urgencia}
-                  </span>
-                </div>
-              )}
-
-              {motivoData.evolucion && (
-                <div className="campo-inline">
-                  <strong>Evolución:</strong>
-                  <span>{motivoData.evolucion}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {motivoData.factores_desencadenantes && Array.isArray(motivoData.factores_desencadenantes) && (
-            <div className="campo">
-              <strong>Factores Desencadenantes:</strong>
-              <ul className="lista-sintomas">
-                {motivoData.factores_desencadenantes.map((factor, index) => (
-                  <li key={index}>{factor}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {motivoData.sintomas_asociados && Array.isArray(motivoData.sintomas_asociados) && (
-            <div className="campo">
-              <strong>Síntomas Asociados:</strong>
-              <ul className="lista-sintomas">
-                {motivoData.sintomas_asociados.map((sintoma, index) => (
-                  <li key={index}>{sintoma}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {motivoData.tratamientos_previos && (
-            <div className="campo">
-              <strong>Tratamientos Previos:</strong>
-              <p>{motivoData.tratamientos_previos}</p>
-              {motivoData.efectividad_tratamiento && (
-                <p><em>Efectividad: {motivoData.efectividad_tratamiento}</em></p>
-              )}
-            </div>
-          )}
-
-        </div>
-      </div>
-    );
-  };
-
-  // ✅ FUNCIÓN PARA ANTECEDENTES
-  const renderAntecedentes = () => {
-    const antecedentesHF = parsearDatosJSON(historialSeleccionado.antecedentes_heredo_familiares, {});
-    const antecedentesNP = parsearDatosJSON(historialSeleccionado.antecedentes_personales_no_patologicos, {});
-    const antecedentesPP = parsearDatosJSON(historialSeleccionado.antecedentes_personales_patologicos, {});
-
-    return (
-      <div className="antecedentes-section">
-        {Object.keys(antecedentesHF).length > 0 && (
-          <div className="seccion-historial">
-            <h3>👨‍👩‍👧‍👦 Antecedentes Heredo-Familiares</h3>
-            <div className="contenido-seccion">
-              <div className="antecedentes-grid">
-                {antecedentesHF.padre && (
-                  <div className="antecedente-item">
-                    <strong>👨 Padre:</strong>
-                    <span>{Array.isArray(antecedentesHF.padre) ? antecedentesHF.padre.join(', ') : antecedentesHF.padre}</span>
-                  </div>
-                )}
-                {antecedentesHF.madre && (
-                  <div className="antecedente-item">
-                    <strong>👩 Madre:</strong>
-                    <span>{Array.isArray(antecedentesHF.madre) ? antecedentesHF.madre.join(', ') : antecedentesHF.madre}</span>
-                  </div>
-                )}
-                {antecedentesHF.hermanos && (
-                  <div className="antecedente-item">
-                    <strong>👫 Hermanos:</strong>
-                    <span>{Array.isArray(antecedentesHF.hermanos) ? antecedentesHF.hermanos.join(', ') : antecedentesHF.hermanos}</span>
-                  </div>
-                )}
-                {antecedentesHF.abuelos_paternos && (
-                  <div className="antecedente-item">
-                    <strong>👴👵 Abuelos Paternos:</strong>
-                    <span>{Array.isArray(antecedentesHF.abuelos_paternos) ? antecedentesHF.abuelos_paternos.join(', ') : antecedentesHF.abuelos_paternos}</span>
-                  </div>
-                )}
-                {antecedentesHF.abuelos_maternos && (
-                  <div className="antecedente-item">
-                    <strong>👴👵 Abuelos Maternos:</strong>
-                    <span>{Array.isArray(antecedentesHF.abuelos_maternos) ? antecedentesHF.abuelos_maternos.join(', ') : antecedentesHF.abuelos_maternos}</span>
-                  </div>
-                )}
-                {antecedentesHF.tios && (
-                  <div className="antecedente-item">
-                    <strong>👨‍👩‍👧‍👦 Tíos:</strong>
-                    <span>{Array.isArray(antecedentesHF.tios) ? antecedentesHF.tios.join(', ') : antecedentesHF.tios}</span>
-                  </div>
+    // Función para renderizar plan de tratamiento
+    const renderPlanTratamiento = (plan) => {
+      try {
+        let planData = plan;
+        
+        if (typeof plan === 'string' && plan.startsWith('{')) {
+          planData = JSON.parse(plan);
+        }
+        
+        if (typeof planData !== 'object' || planData === null) {
+          return <p>{plan}</p>;
+        }
+        
+        return (
+          <div className="plan-estructurado">
+            {planData.inmediato && (
+              <div className="plan-seccion">
+                <h4>🚀 Tratamiento Inmediato:</h4>
+                <p>{planData.inmediato}</p>
+              </div>
+            )}
+            
+            {planData.seguimiento && (
+              <div className="plan-seccion">
+                <h4>📅 Seguimiento:</h4>
+                <p>{planData.seguimiento}</p>
+              </div>
+            )}
+            
+            {planData.recomendaciones && (
+              <div className="plan-seccion">
+                <h4>💡 Recomendaciones:</h4>
+                {Array.isArray(planData.recomendaciones) ? (
+                  <ul className="lista-recomendaciones">
+                    {planData.recomendaciones.map((rec, index) => (
+                      <li key={index}>{rec}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{planData.recomendaciones}</p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {Object.keys(antecedentesNP).length > 0 && (
-          <div className="seccion-historial">
-            <h3>🏃‍♂️ Antecedentes Personales No Patológicos</h3>
-            <div className="contenido-seccion">
-              <div className="antecedentes-grid">
-                {antecedentesNP.higiene_personal && (
-                  <div className="antecedente-item">
-                    <strong>🧼 Higiene Personal:</strong>
-                    <span>{antecedentesNP.higiene_personal}</span>
-                  </div>
-                )}
-                {antecedentesNP.ejercicio && (
-                  <div className="antecedente-item">
-                    <strong>🏃‍♂️ Ejercicio:</strong>
-                    <span>{antecedentesNP.ejercicio}</span>
-                  </div>
-                )}
-                {antecedentesNP.alimentacion && (
-                  <div className="antecedente-item">
-                    <strong>🍎 Alimentación:</strong>
-                    <span>{antecedentesNP.alimentacion}</span>
-                  </div>
-                )}
-                {antecedentesNP.tabaquismo !== undefined && (
-                  <div className="antecedente-item">
-                    <strong>🚬 Tabaquismo:</strong>
-                    <span>{antecedentesNP.tabaquismo ? 'Sí' : 'No'}</span>
-                  </div>
-                )}
-                {antecedentesNP.alcoholismo !== undefined && (
-                  <div className="antecedente-item">
-                    <strong>🍺 Alcoholismo:</strong>
-                    <span>{antecedentesNP.alcoholismo ? 'Sí' : 'No'}</span>
-                  </div>
+            )}
+            
+            {planData.corto_plazo && (
+              <div className="plan-seccion">
+                <h4>📝 Corto Plazo:</h4>
+                {Array.isArray(planData.corto_plazo) ? (
+                  <ul className="lista-plan">
+                    {planData.corto_plazo.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{planData.corto_plazo}</p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {Object.keys(antecedentesPP).length > 0 && (
-          <div className="seccion-historial">
-            <h3>🏥 Antecedentes Personales Patológicos</h3>
-            <div className="contenido-seccion">
-              <div className="signos-vitales">
-                {antecedentesPP.temperatura && (
-                  <div className="signo-vital">
-                    <strong>🌡️ Temperatura:</strong>
-                    <span>{antecedentesPP.temperatura}°C</span>
-                  </div>
-                )}
-                {antecedentesPP.tension_arterial_sistolica && antecedentesPP.tension_arterial_diastolica && (
-                  <div className="signo-vital">
-                    <strong>💗 Tensión Arterial:</strong>
-                    <span>{antecedentesPP.tension_arterial_sistolica}/{antecedentesPP.tension_arterial_diastolica} mmHg</span>
-                  </div>
-                )}
-                {antecedentesPP.frecuencia_cardiaca && (
-                  <div className="signo-vital">
-                    <strong>💓 Frecuencia Cardíaca:</strong>
-                    <span>{antecedentesPP.frecuencia_cardiaca} lpm</span>
-                  </div>
-                )}
-                {antecedentesPP.frecuencia_respiratoria && (
-                  <div className="signo-vital">
-                    <strong>🫁 Frecuencia Respiratoria:</strong>
-                    <span>{antecedentesPP.frecuencia_respiratoria} rpm</span>
-                  </div>
+            )}
+            
+            {planData.mediano_plazo && (
+              <div className="plan-seccion">
+                <h4>📈 Mediano Plazo:</h4>
+                {Array.isArray(planData.mediano_plazo) ? (
+                  <ul className="lista-plan">
+                    {planData.mediano_plazo.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{planData.mediano_plazo}</p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // ✅ FUNCIÓN PARA EXÁMENES
-  const renderExamenes = () => {
-    const examenExtrabucal = parsearDatosJSON(historialSeleccionado.examen_extrabucal, {});
-    const examenIntrabucal = parsearDatosJSON(historialSeleccionado.examen_intrabucal, {});
-
-    return (
-      <div className="examenes-section">
-        {Object.keys(examenExtrabucal).length > 0 && (
-          <div className="seccion-historial">
-            <h3>👤 Examen Extrabucal</h3>
-            <div className="contenido-seccion">
-              <div className="examen-grid">
-                {examenExtrabucal.craneo && (
-                  <div className="examen-item">
-                    <strong>🧠 Cráneo:</strong>
-                    <span>{examenExtrabucal.craneo}</span>
-                  </div>
-                )}
-                {examenExtrabucal.biotipo_facial && (
-                  <div className="examen-item">
-                    <strong>👤 Biotipo Facial:</strong>
-                    <span>{examenExtrabucal.biotipo_facial}</span>
-                  </div>
-                )}
-                {examenExtrabucal.perfil && (
-                  <div className="examen-item">
-                    <strong>📏 Perfil:</strong>
-                    <span>{examenExtrabucal.perfil}</span>
-                  </div>
-                )}
-                {examenExtrabucal.apertura_maxima && (
-                  <div className="examen-item">
-                    <strong>📏 Apertura Máxima:</strong>
-                    <span>{examenExtrabucal.apertura_maxima} mm</span>
-                  </div>
-                )}
-                {examenExtrabucal.lateralidad_derecha && (
-                  <div className="examen-item">
-                    <strong>➡️ Lateralidad Derecha:</strong>
-                    <span>{examenExtrabucal.lateralidad_derecha} mm</span>
-                  </div>
-                )}
-                {examenExtrabucal.lateralidad_izquierda && (
-                  <div className="examen-item">
-                    <strong>⬅️ Lateralidad Izquierda:</strong>
-                    <span>{examenExtrabucal.lateralidad_izquierda} mm</span>
-                  </div>
+            )}
+            
+            {planData.largo_plazo && (
+              <div className="plan-seccion">
+                <h4>🎯 Largo Plazo:</h4>
+                {Array.isArray(planData.largo_plazo) ? (
+                  <ul className="lista-plan">
+                    {planData.largo_plazo.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>{planData.largo_plazo}</p>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {Object.keys(examenIntrabucal).length > 0 && (
-          <div className="seccion-historial">
-            <h3>🦷 Examen Intrabucal</h3>
-            <div className="contenido-seccion">
-              <div className="examen-grid">
-                {examenIntrabucal.higiene_bucal && (
-                  <div className="examen-item">
-                    <strong>🪥 Higiene Bucal:</strong>
-                    <span>{examenIntrabucal.higiene_bucal}</span>
+            )}
+            
+            {planData.medicamentos_prescritos && (
+              <div className="plan-seccion">
+                <h4>💊 Medicamentos Prescritos:</h4>
+                {Array.isArray(planData.medicamentos_prescritos) ? (
+                  <div className="medicamentos-grid">
+                    {planData.medicamentos_prescritos.map((med, index) => (
+                      <div key={index} className="medicamento-item">
+                        <strong>{med.medicamento}</strong>
+                        <span>Dosis: {med.dosis}</span>
+                        {med.indicaciones && <em>Indicaciones: {med.indicaciones}</em>}
+                      </div>
+                    ))}
                   </div>
-                )}
-                {examenIntrabucal.molar_derecha && (
-                  <div className="examen-item">
-                    <strong>🦷 Molar Derecha:</strong>
-                    <span>{examenIntrabucal.molar_derecha}</span>
-                  </div>
-                )}
-                {examenIntrabucal.molar_izquierda && (
-                  <div className="examen-item">
-                    <strong>🦷 Molar Izquierda:</strong>
-                    <span>{examenIntrabucal.molar_izquierda}</span>
-                  </div>
-                )}
-                {examenIntrabucal.encias && (
-                  <div className="examen-item">
-                    <strong>🟣 Encías:</strong>
-                    <span>{examenIntrabucal.encias}</span>
-                  </div>
-                )}
-                {examenIntrabucal.lengua && (
-                  <div className="examen-item">
-                    <strong>👅 Lengua:</strong>
-                    <span>{examenIntrabucal.lengua}</span>
-                  </div>
-                )}
-                {examenIntrabucal.paladar && (
-                  <div className="examen-item">
-                    <strong>🏠 Paladar:</strong>
-                    <span>{examenIntrabucal.paladar}</span>
-                  </div>
+                ) : (
+                  <p>{planData.medicamentos_prescritos}</p>
                 )}
               </div>
-            </div>
+            )}
+            
+            {planData.proxima_cita && (
+              <div className="plan-seccion">
+                <h4>📅 Próxima Cita:</h4>
+                <p>{planData.proxima_cita}</p>
+              </div>
+            )}
+            
+            {planData.observaciones && (
+              <div className="plan-seccion">
+                <h4>📋 Observaciones:</h4>
+                <p>{planData.observaciones}</p>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    );
-  };
-
-  // ✅ FUNCIÓN PARA DIAGNÓSTICO Y TRATAMIENTO
-  const renderDiagnosticoTratamiento = () => {
-  // ✅ FUNCIÓN PARA FORMATEAR PLAN DE TRATAMIENTO
-  const formatearPlanTratamiento = (plan) => {
-    try {
-      let planData = plan;
-      
-      // Si es string JSON, parsearlo
-      if (typeof plan === 'string' && plan.startsWith('{')) {
-        planData = JSON.parse(plan);
-      }
-      
-      // Si no es objeto, devolverlo como string
-      if (typeof planData !== 'object' || planData === null) {
+        );
+        
+      } catch (error) {
+        console.warn('Error formateando plan de tratamiento:', error);
         return <p>{plan}</p>;
       }
-      
-      return (
-        <div className="plan-estructurado">
-          {/* Inmediato */}
-          {planData.inmediato && (
-            <div className="plan-seccion">
-              <h4>🚀 Tratamiento Inmediato:</h4>
-              <p>{planData.inmediato}</p>
-            </div>
-          )}
-          
-          {/* Seguimiento */}
-          {planData.seguimiento && (
-            <div className="plan-seccion">
-              <h4>📅 Seguimiento:</h4>
-              <p>{planData.seguimiento}</p>
-            </div>
-          )}
-          
-          {/* Recomendaciones */}
-          {planData.recomendaciones && (
-            <div className="plan-seccion">
-              <h4>💡 Recomendaciones:</h4>
-              {Array.isArray(planData.recomendaciones) ? (
-                <ul className="lista-recomendaciones">
-                  {planData.recomendaciones.map((rec, index) => (
-                    <li key={index}>{rec}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{planData.recomendaciones}</p>
-              )}
-            </div>
-          )}
-          
-          {/* Corto Plazo */}
-          {planData.corto_plazo && (
-            <div className="plan-seccion">
-              <h4>📝 Corto Plazo:</h4>
-              {Array.isArray(planData.corto_plazo) ? (
-                <ul className="lista-plan">
-                  {planData.corto_plazo.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{planData.corto_plazo}</p>
-              )}
-            </div>
-          )}
-          
-          {/* Mediano Plazo */}
-          {planData.mediano_plazo && (
-            <div className="plan-seccion">
-              <h4>📈 Mediano Plazo:</h4>
-              {Array.isArray(planData.mediano_plazo) ? (
-                <ul className="lista-plan">
-                  {planData.mediano_plazo.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{planData.mediano_plazo}</p>
-              )}
-            </div>
-          )}
-          
-          {/* Largo Plazo */}
-          {planData.largo_plazo && (
-            <div className="plan-seccion">
-              <h4>🎯 Largo Plazo:</h4>
-              {Array.isArray(planData.largo_plazo) ? (
-                <ul className="lista-plan">
-                  {planData.largo_plazo.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>{planData.largo_plazo}</p>
-              )}
-            </div>
-          )}
-          
-          {/* Medicamentos Prescritos */}
-          {planData.medicamentos_prescritos && (
-            <div className="plan-seccion">
-              <h4>💊 Medicamentos Prescritos:</h4>
-              {Array.isArray(planData.medicamentos_prescritos) ? (
-                <div className="medicamentos-grid">
-                  {planData.medicamentos_prescritos.map((med, index) => (
-                    <div key={index} className="medicamento-item">
-                      <strong>{med.medicamento}</strong>
-                      <span>Dosis: {med.dosis}</span>
-                      {med.indicaciones && <em>Indicaciones: {med.indicaciones}</em>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p>{planData.medicamentos_prescritos}</p>
-              )}
-            </div>
-          )}
-          
-          {/* Proxima Cita */}
-          {planData.proxima_cita && (
-            <div className="plan-seccion">
-              <h4>📅 Próxima Cita:</h4>
-              <p>{planData.proxima_cita}</p>
-            </div>
-          )}
-          
-          {/* Observaciones */}
-          {planData.observaciones && (
-            <div className="plan-seccion">
-              <h4>📋 Observaciones:</h4>
-              <p>{planData.observaciones}</p>
-            </div>
-          )}
-        </div>
-      );
-      
-    } catch (error) {
-      console.warn('Error formateando plan de tratamiento:', error);
-      return <p>{plan}</p>;
-    }
-  };
+    };
 
+    // Switch principal para renderizar según la vista activa
+ switch (vistaActiva) {
+    case 'resumen':
   return (
-    <div className="seccion-historial">
-      <h3>🩺 Diagnóstico y Tratamiento</h3>
-      <div className="contenido-seccion">
-        {historialSeleccionado.diagnostico && (
-          <div className="campo diagnostico-campo">
-            <strong>🔍 Diagnóstico:</strong>
-            <p>{historialSeleccionado.diagnostico}</p>
-          </div>
-        )}
-        
-        {historialSeleccionado.tratamiento && (
-          <div className="campo tratamiento-campo">
-            <strong>💊 Tratamiento:</strong>
-            <p>{historialSeleccionado.tratamiento}</p>
-          </div>
-        )}
-        
-        {historialSeleccionado.plan_tratamiento && (
-          <div className="campo plan-tratamiento-campo">
-            <strong>📋 Plan de Tratamiento:</strong>
-            <div className="plan-content">
-              {formatearPlanTratamiento(historialSeleccionado.plan_tratamiento)}
+    <div className="vista-resumen-completa">
+      {/* Motivo de Consulta */}
+      {(Object.keys(motivoConsultaData).length > 0 || historialSeleccionado.motivo_consulta_texto) && 
+        renderSeccion('🗣️ Motivo de Consulta', [
+          renderCampo('Motivo Principal', motivoConsultaData.motivo_principal || historialSeleccionado.motivo_consulta_texto),
+          renderCampo('Padecimiento Actual', motivoConsultaData.padecimiento_actual),
+          renderCampo('Intensidad del Dolor', motivoConsultaData.intensidad_dolor ? `${motivoConsultaData.intensidad_dolor}/10` : ''),
+          renderCampo('Urgencia', motivoConsultaData.urgencia),
+          renderCampo('Evolución', motivoConsultaData.evolucion),
+          renderLista('Síntomas Asociados', motivoConsultaData.sintomas_asociados)
+        ])
+      }
+      
+      {/* Diagnóstico y Tratamiento - MODIFICADO */}
+      <div className="seccion-historial-completa">
+        <h3 className="titulo-seccion-completa">
+          <span className="icono-seccion">🩺</span>
+          Diagnóstico y Tratamiento
+        </h3>
+        <div className="contenido-seccion-completa">
+          <div className="diagnostico-tratamiento-editable">
+            <div className="campo-diagnostico">
+              <label htmlFor="diagnostico-input">
+                <strong>Diagnóstico:</strong>
+              </label>
+              <textarea
+                id="diagnostico-input"
+                className="input-diagnostico"
+                placeholder="Escriba el diagnóstico del paciente..."
+                defaultValue={historialSeleccionado.diagnostico || ''}
+                rows="3"
+              />
+            </div>
+            
+            <div className="campo-tratamiento">
+              <label htmlFor="tratamiento-input">
+                <strong>Tratamiento:</strong>
+              </label>
+              <textarea
+                id="tratamiento-input"
+                className="input-tratamiento"
+                placeholder="Escriba el tratamiento recomendado..."
+                defaultValue={historialSeleccionado.tratamiento || ''}
+                rows="4"
+              />
+            </div>
+            
+            <div className="acciones-diagnostico">
+              <button 
+                className="btn-guardar-diagnostico"
+                onClick={() => guardarDiagnosticoTratamiento()}
+              >
+                💾 Guardar Diagnóstico y Tratamiento
+              </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
-};
 
-  // ✅ SWITCH CASE CORREGIDO
-  switch (vistaActiva) {
-    case 'resumen':
-      return (
-        <div className="vista-resumen">
-          {renderMotivoConsulta()}
-          {renderDiagnosticoTratamiento()}
-        </div>
-      );
-      
-    case 'antecedentes':
-      return (
-        <div className="vista-antecedentes">
-          {renderAntecedentes()}
-        </div>
-      );
-      
-    case 'examenes':
-      return (
-        <div className="vista-examenes">
-          {renderExamenes()}
-        </div>
-      );
-      
-    case 'completo':
-      return (
-        <div className="vista-completa">
-          <div className="historial-completo-header">
-            <h2>📋 Historial Clínico Completo</h2>
-            <p>Consulta del {formatearFecha(historialSeleccionado.fecha_consulta)} - Dr. {historialSeleccionado.doctor_nombre}</p>
+      case 'antecedentes':
+        return (
+          <div className="vista-antecedentes-completa">
+            {/* Antecedentes Heredo-Familiares */}
+            {Object.keys(antecedentesHFData).length > 0 && 
+              renderSeccion('👨‍👩‍👧‍👦 Antecedentes Heredo-Familiares', [
+                // Antecedentes por familiares
+                antecedentesHFData.antecedentes && Array.isArray(antecedentesHFData.antecedentes) && 
+                antecedentesHFData.antecedentes.map((familiar, index) => (
+                  familiar.padecimientos && (
+                    <div key={index} className="familiar-antecedente">
+                      <strong>{familiar.parentesco}:</strong>
+                      <span>{familiar.padecimientos}</span>
+                      {familiar.edad && <em> (Edad: {familiar.edad})</em>}
+                      <span className={`estado-familiar ${familiar.vivo ? 'vivo' : 'finado'}`}>
+                        {familiar.vivo ? ' - Vivo' : ' - Finado'}
+                      </span>
+                    </div>
+                  )
+                )),
+                
+                // Enfermedades relevantes
+                antecedentesHFData.enfermedades_relevantes && Object.entries(antecedentesHFData.enfermedades_relevantes).map(([enfermedad, presente]) => 
+                  presente && renderCampo(enfermedad.replace('_', ' ').toUpperCase(), 'Presente')
+                )
+              ])
+            }
+
+            {/* Antecedentes Personales No Patológicos */}
+            {Object.keys(antecedentesNPData).length > 0 && 
+              renderSeccion('🏃‍♂️ Antecedentes Personales No Patológicos', [
+                // Servicios Públicos
+                antecedentesNPData.servicios_publicos && renderSeccion('🏘️ Servicios Públicos', 
+                  Object.entries(antecedentesNPData.servicios_publicos).map(([servicio, tiene]) => 
+                    typeof tiene === 'boolean' && renderCampo(servicio.replace('_', ' ').toUpperCase(), tiene ? 'Sí' : 'No')
+                  ).filter(Boolean)
+                ),
+
+                // Higiene
+                antecedentesNPData.higiene && [
+                  renderCampo('Higiene General', antecedentesNPData.higiene.general),
+                  renderCampo('Higiene Bucal', antecedentesNPData.higiene.bucal)
+                ],
+
+                // Hábitos Alimentarios
+                antecedentesNPData.alimentarios && renderSeccion('🍽️ Hábitos Alimentarios', [
+                  renderCampo('Comidas por día', antecedentesNPData.alimentarios.comidas_por_dia),
+                  renderCampo('Cantidad de agua (litros)', antecedentesNPData.alimentarios.cantidad_agua),
+                  renderCampo('Desayuno', antecedentesNPData.alimentarios.desayuno),
+                  renderCampo('Comida', antecedentesNPData.alimentarios.comida),
+                  renderCampo('Cena', antecedentesNPData.alimentarios.cena),
+                  renderCampo('Entre comidas', antecedentesNPData.alimentarios.entre_comidas)
+                ]),
+
+                // Hábitos Perniciosos
+                antecedentesNPData.habitos_perniciosos && renderSeccion('⚠️ Hábitos Perniciosos', [
+                  // Alcoholismo
+                  antecedentesNPData.habitos_perniciosos.alcoholismo && [
+                    renderCampo('Alcoholismo', antecedentesNPData.habitos_perniciosos.alcoholismo.tiene ? 'Sí' : 'No'),
+                    antecedentesNPData.habitos_perniciosos.alcoholismo.tiene && [
+                      renderCampo('Frecuencia', antecedentesNPData.habitos_perniciosos.alcoholismo.frecuencia),
+                      renderCampo('Cantidad', antecedentesNPData.habitos_perniciosos.alcoholismo.cantidad),
+                      renderCampo('Tipo', antecedentesNPData.habitos_perniciosos.alcoholismo.tipo)
+                    ]
+                  ],
+                  
+                  // Tabaquismo
+                  antecedentesNPData.habitos_perniciosos.tabaquismo && [
+                    renderCampo('Tabaquismo', antecedentesNPData.habitos_perniciosos.tabaquismo.tiene ? 'Sí' : 'No'),
+                    antecedentesNPData.habitos_perniciosos.tabaquismo.tiene && [
+                      renderCampo('Frecuencia', antecedentesNPData.habitos_perniciosos.tabaquismo.frecuencia),
+                      renderCampo('Tiempo fumando', antecedentesNPData.habitos_perniciosos.tabaquismo.cantidad),
+                      renderCampo('Tipo de tabaco', antecedentesNPData.habitos_perniciosos.tabaquismo.tipo)
+                    ]
+                  ],
+
+                  // Hábitos Orales
+                  antecedentesNPData.habitos_perniciosos.habitos_orales && Object.entries(antecedentesNPData.habitos_perniciosos.habitos_orales).map(([habito, presente]) => 
+                    presente && habito !== 'otros' && renderCampo(habito.replace('_', ' ').toUpperCase(), 'Presente')
+                  )
+                ])
+              ])
+            }
+
+            {/* Antecedentes Personales Patológicos */}
+            {Object.keys(antecedentesPPData).length > 0 && 
+              renderSeccion('🏥 Antecedentes Personales Patológicos', [
+                // Padecimientos
+                antecedentesPPData.padecimientos && Array.isArray(antecedentesPPData.padecimientos) &&
+                antecedentesPPData.padecimientos.filter(p => p.padecimiento).map((padecimiento, index) => (
+                  <div key={index} className="padecimiento-item">
+                    <strong>{padecimiento.padecimiento}</strong>
+                    {padecimiento.edad && <span> (Edad: {padecimiento.edad})</span>}
+                    {padecimiento.control_medico && <div>Control médico: {padecimiento.control_medico}</div>}
+                    {padecimiento.complicaciones && <div>Complicaciones: {padecimiento.complicaciones}</div>}
+                  </div>
+                )),
+
+                // Somatometría
+                antecedentesPPData.somatometria && renderSeccion('📏 Somatometría', [
+                  renderCampo('Peso', antecedentesPPData.somatometria.peso ? `${antecedentesPPData.somatometria.peso} kg` : ''),
+                  renderCampo('Talla', antecedentesPPData.somatometria.talla ? `${antecedentesPPData.somatometria.talla} cm` : ''),
+                  renderCampo('IMC', antecedentesPPData.somatometria.imc)
+                ]),
+
+                // Signos Vitales
+                antecedentesPPData.signos_vitales && renderSeccion('💓 Signos Vitales', [
+                  renderCampo('Temperatura', antecedentesPPData.signos_vitales.temperatura ? `${antecedentesPPData.signos_vitales.temperatura}°C` : ''),
+                  renderCampo('Tensión Arterial', 
+                    antecedentesPPData.signos_vitales.tension_arterial_sistolica && antecedentesPPData.signos_vitales.tension_arterial_diastolica ?
+                    `${antecedentesPPData.signos_vitales.tension_arterial_sistolica}/${antecedentesPPData.signos_vitales.tension_arterial_diastolica} mmHg` : ''
+                  ),
+                  renderCampo('Frecuencia Cardíaca', antecedentesPPData.signos_vitales.frecuencia_cardiaca ? `${antecedentesPPData.signos_vitales.frecuencia_cardiaca} lpm` : ''),
+                  renderCampo('Frecuencia Respiratoria', antecedentesPPData.signos_vitales.frecuencia_respiratoria ? `${antecedentesPPData.signos_vitales.frecuencia_respiratoria} rpm` : '')
+                ])
+              ])
+            }
           </div>
-          
-          {renderMotivoConsulta()}
-          {renderAntecedentes()}
-          {renderExamenes()}
-          {renderDiagnosticoTratamiento()}
-        </div>
-      );
+        );
+
+        case 'examenes':
+        return (
+          <div className="vista-examenes-completa">
+            {/* Examen Extrabucal */}
+            {Object.keys(examenExtrabucalData).length > 0 && 
+              renderSeccion('👤 Examen Extrabucal', [
+                // Cabeza
+                examenExtrabucalData.cabeza && renderSeccion('🧠 Cabeza', [
+                  renderCampo('Cráneo', examenExtrabucalData.cabeza.craneo),
+                  renderCampo('Biotipo Facial', examenExtrabucalData.cabeza.biotipo_facial),
+                  renderCampo('Perfil', examenExtrabucalData.cabeza.perfil)
+                ]),
+
+                // ATM
+                examenExtrabucalData.atm && renderSeccion('🦴 Articulación Temporomandibular', [
+                  renderCampo('Alteraciones', examenExtrabucalData.atm.alteracion),
+                  renderCampo('Apertura Máxima', examenExtrabucalData.atm.apertura_maxima ? `${examenExtrabucalData.atm.apertura_maxima} mm` : ''),
+                  renderCampo('Lateralidad Derecha', examenExtrabucalData.atm.lateralidad_derecha ? `${examenExtrabucalData.atm.lateralidad_derecha} mm` : ''),
+                  renderCampo('Lateralidad Izquierda', examenExtrabucalData.atm.lateralidad_izquierda ? `${examenExtrabucalData.atm.lateralidad_izquierda} mm` : ''),
+                  renderCampo('Masticación Bilateral', examenExtrabucalData.atm.masticacion_bilateral !== undefined ? 
+                    (examenExtrabucalData.atm.masticacion_bilateral ? 'Sí' : 'No') : ''),
+                  renderCampo('Descripción', examenExtrabucalData.atm.descripcion_masticacion)
+                ]),
+
+                // Músculos del Cuello
+                examenExtrabucalData.musculos_cuello && renderSeccion('💪 Músculos del Cuello', 
+                  Object.entries(examenExtrabucalData.musculos_cuello).map(([musculo, descripcion]) => 
+                    renderCampo(musculo.replace('_', ' ').toUpperCase(), descripcion)
+                  ).filter(Boolean)
+                )
+              ])
+            }
+
+            {/* Examen Intrabucal */}
+            {Object.keys(examenIntrabucalData).length > 0 && 
+              renderSeccion('🦷 Examen Intrabucal', [
+                // Estructuras Intrabucales
+                examenIntrabucalData.estructuras && renderSeccion('🔍 Estructuras Intrabucales', 
+                  Object.entries(examenIntrabucalData.estructuras).map(([estructura, descripcion]) => 
+                    renderCampo(estructura.replace('_', ' ').toUpperCase(), descripcion)
+                  ).filter(Boolean)
+                ),
+
+                // Higiene Bucal
+                examenIntrabucalData.higiene_bucal && renderSeccion('🪥 Higiene Bucal', [
+                  renderCampo('Estado General', examenIntrabucalData.higiene_bucal.general),
+                  renderCampo('Índice de Placa', examenIntrabucalData.higiene_bucal.indice_placa),
+                  renderCampo('Cálculo', examenIntrabucalData.higiene_bucal.calculo),
+                  renderCampo('Halitosis', examenIntrabucalData.higiene_bucal.halitosis)
+                ]),
+
+                // Encías
+                examenIntrabucalData.encias && renderSeccion('🟣 Encías', [
+                  renderCampo('Color', examenIntrabucalData.encias.color),
+                  renderCampo('Textura', examenIntrabucalData.encias.textura),
+                  renderCampo('Forma', examenIntrabucalData.encias.forma),
+                  renderCampo('Consistencia', examenIntrabucalData.encias.consistencia),
+                  renderCampo('Sangrado', examenIntrabucalData.encias.sangrado),
+                  
+                  // Alteraciones gingivales
+                  examenIntrabucalData.encias.alteraciones && Array.isArray(examenIntrabucalData.encias.alteraciones) &&
+                  examenIntrabucalData.encias.alteraciones.map((alteracion, index) => (
+                    <div key={index} className="alteracion-gingival">
+                      <strong>Alteración {index + 1}:</strong>
+                      <div>Localización: {alteracion.localizacion}</div>
+                      <div>Descripción: {alteracion.descripcion}</div>
+                      {alteracion.tamaño && <div>Tamaño: {alteracion.tamaño}</div>}
+                      {alteracion.color && <div>Color: {alteracion.color}</div>}
+                      {alteracion.consistencia && <div>Consistencia: {alteracion.consistencia}</div>}
+                    </div>
+                  ))
+                ])
+              ])
+            }
+
+            {/* Oclusión */}
+            {Object.keys(oclusionData).length > 0 && 
+              renderSeccion('🦷 Oclusión y Odontograma', [
+                // Clasificación de Angle
+                oclusionData.clasificacion_angle && renderSeccion('📐 Clasificación de Angle', [
+                  renderCampo('Relación Molar Derecho', oclusionData.clasificacion_angle.relacion_molar_derecho),
+                  renderCampo('Relación Molar Izquierdo', oclusionData.clasificacion_angle.relacion_molar_izquierdo),
+                  renderCampo('Relación Canina Derecho', oclusionData.clasificacion_angle.relacion_canina_derecho),
+                  renderCampo('Relación Canina Izquierdo', oclusionData.clasificacion_angle.relacion_canina_izquierdo),
+                  renderCampo('Sobremordida Vertical', oclusionData.clasificacion_angle.sobremordida_vertical),
+                  renderCampo('Sobremordida Horizontal', oclusionData.clasificacion_angle.sobremordida_horizontal),
+                  renderCampo('Línea Media Maxilar', oclusionData.clasificacion_angle.linea_media_maxilar),
+                  renderCampo('Línea Media Mandibular', oclusionData.clasificacion_angle.linea_media_mandibular),
+                  renderCampo('Diastemas', oclusionData.clasificacion_angle.diastemas),
+                  renderCampo('Apiñamiento', oclusionData.clasificacion_angle.apiñamiento)
+                ]),
+
+                // Armonía de Maxilares
+                oclusionData.armonia_maxilares && renderSeccion('🏛️ Armonía de Maxilares', [
+                  renderCampo('Amplitud Arco Superior', oclusionData.armonia_maxilares.amplitud_arco_superior),
+                  renderCampo('Bóveda Palatina', oclusionData.armonia_maxilares.boveda_palatina),
+                  renderCampo('Amplitud Arco Inferior', oclusionData.armonia_maxilares.amplitud_arco_inferior),
+                  renderCampo('Descripción', oclusionData.armonia_maxilares.descripcion_armonia)
+                ]),
+
+                // Odontograma
+                oclusionData.odontograma && renderSeccion('🦷 Odontograma', [
+                  renderCampo('Observaciones Generales', oclusionData.odontograma.observaciones_generales),
+                  
+                  // Dientes presentes/ausentes
+                  oclusionData.odontograma.dientes_presentes && Object.entries(oclusionData.odontograma.dientes_presentes).length > 0 && (
+                    <div className="dientes-estado">
+                      <h4>Estado de Dientes:</h4>
+                      {Object.entries(oclusionData.odontograma.dientes_presentes).map(([diente, estado]) => (
+                        <span key={diente} className={`diente-estado ${estado}`}>
+                          Diente {diente}: {estado}
+                        </span>
+                      ))}
+                    </div>
+                  )
+                ])
+              ])
+            }
+          </div>
+        );
+
+      case 'completo':
+  return (
+    <div className="vista-completa-historial">
+      {/* ELIMINADO: .historial-completo-header */}
       
-    default:
+      {/* INFORMACIÓN PERSONAL */}
+      {(Object.keys(datosPersonales).length > 0 || Object.keys(fichaIdentificacionData).length > 0) && 
+        renderSeccion('👤 Información Personal', [
+          renderCampo('Nombre Completo', datosPersonales.nombre || fichaIdentificacionData.nombre),
+          renderCampo('Apellido Paterno', datosPersonales.apellidoPaterno || fichaIdentificacionData.apellidoPaterno),
+          renderCampo('Apellido Materno', datosPersonales.apellidoMaterno || fichaIdentificacionData.apellidoMaterno),
+          renderCampo('Sexo', datosPersonales.sexo || fichaIdentificacionData.sexo),
+          renderCampo('Fecha de Nacimiento', datosPersonales.fechaNacimiento || fichaIdentificacionData.fechaNacimiento),
+          renderCampo('RFC', datosPersonales.rfc || fichaIdentificacionData.rfc),
+          renderCampo('Teléfono', datosPersonales.telefono || fichaIdentificacionData.telefono),
+          renderCampo('Email', datosPersonales.email || fichaIdentificacionData.email)
+        ])
+      }
+
+      {/* MOTIVO DE CONSULTA */}
+      {(Object.keys(motivoConsultaData).length > 0 || historialSeleccionado.motivo_consulta_texto) && 
+        renderSeccion('🗣️ Motivo de Consulta', [
+          renderCampo('Motivo Principal', motivoConsultaData.motivo || motivoConsultaData.motivo_principal || historialSeleccionado.motivo_consulta_texto),
+          renderCampo('Escala de Dolor', motivoConsultaData.escalaDolor ? `${motivoConsultaData.escalaDolor}/10` : ''),
+          renderCampo('Nivel de Urgencia', motivoConsultaData.nivelUrgencia),
+          renderCampo('Duración de Síntomas', motivoConsultaData.duracionSintomas),
+          renderCampo('Tratamiento Previo', motivoConsultaData.tratamientoPrevio),
+          renderCampo('Padecimiento Actual', motivoConsultaData.padecimiento_actual),
+          renderCampo('Evolución', motivoConsultaData.evolucion)
+        ])
+      }
+
+      {/* Resto del contenido sin cambios... */}
+      {/* ANTECEDENTES HEREDO-FAMILIARES */}
+      {Object.keys(antecedentesHFData).length > 0 && 
+        renderSeccion('👨‍👩‍👧‍👦 Antecedentes Heredo-Familiares', [
+          antecedentesHFData.antecedentes && Array.isArray(antecedentesHFData.antecedentes) && 
+          antecedentesHFData.antecedentes.filter(f => f.padecimientos).map((familiar, index) => (
+            <div key={index} className="familiar-antecedente">
+              <strong>{familiar.parentesco}:</strong> {familiar.padecimientos}
+              {familiar.edad && ` (${familiar.edad} años)`}
+              <span className={`estado ${familiar.vivo ? 'vivo' : 'finado'}`}>
+                {familiar.vivo ? ' - Vivo' : ' - Finado'}
+              </span>
+            </div>
+          ))
+        ])
+      }
+
+            {/* ANTECEDENTES PERSONALES NO PATOLÓGICOS */}
+            {Object.keys(antecedentesNPData).length > 0 && 
+              renderSeccion('🏃‍♂️ Antecedentes Personales No Patológicos', [
+                // Servicios públicos
+                antecedentesNPData.servicios_publicos && Object.entries(antecedentesNPData.servicios_publicos).map(([servicio, valor]) => 
+                  typeof valor === 'boolean' && renderCampo(servicio.replace('_', ' '), valor ? 'Sí' : 'No')
+                ),
+                
+                // Higiene
+                antecedentesNPData.higiene && [
+                  renderCampo('Higiene General', antecedentesNPData.higiene.general),
+                  renderCampo('Higiene Bucal', antecedentesNPData.higiene.bucal)
+                ]
+              ])
+            }
+
+            {/* ANTECEDENTES PERSONALES PATOLÓGICOS */}
+            {Object.keys(antecedentesPPData).length > 0 && 
+              renderSeccion('🏥 Antecedentes Personales Patológicos', [
+                // Signos vitales
+                antecedentesPPData.signos_vitales && [
+                  renderCampo('Temperatura', antecedentesPPData.signos_vitales.temperatura ? `${antecedentesPPData.signos_vitales.temperatura}°C` : ''),
+                  renderCampo('Tensión Arterial', 
+                    antecedentesPPData.signos_vitales.tension_arterial_sistolica && antecedentesPPData.signos_vitales.tension_arterial_diastolica ?
+                    `${antecedentesPPData.signos_vitales.tension_arterial_sistolica}/${antecedentesPPData.signos_vitales.tension_arterial_diastolica} mmHg` : ''
+                  ),
+                  renderCampo('Frecuencia Cardíaca', antecedentesPPData.signos_vitales.frecuencia_cardiaca ? `${antecedentesPPData.signos_vitales.frecuencia_cardiaca} lpm` : ''),
+                  renderCampo('Frecuencia Respiratoria', antecedentesPPData.signos_vitales.frecuencia_respiratoria ? `${antecedentesPPData.signos_vitales.frecuencia_respiratoria} rpm` : '')
+                ]
+              ])
+            }
+
+            {/* EXAMEN EXTRABUCAL */}
+            {Object.keys(examenExtrabucalData).length > 0 && 
+              renderSeccion('👤 Examen Extrabucal', [
+                examenExtrabucalData.cabeza && [
+                  renderCampo('Cráneo', examenExtrabucalData.cabeza.craneo),
+                  renderCampo('Biotipo Facial', examenExtrabucalData.cabeza.biotipo_facial),
+                  renderCampo('Perfil', examenExtrabucalData.cabeza.perfil)
+                ]
+              ])
+            }
+
+            {/* EXAMEN INTRABUCAL */}
+            {Object.keys(examenIntrabucalData).length > 0 && 
+              renderSeccion('🦷 Examen Intrabucal', [
+                examenIntrabucalData.estructuras && Object.entries(examenIntrabucalData.estructuras).map(([estructura, desc]) => 
+                  renderCampo(estructura.replace('_', ' '), desc)
+                ),
+                
+                examenIntrabucalData.higiene_bucal && renderCampo('Higiene Bucal General', examenIntrabucalData.higiene_bucal.general)
+              ])
+            }
+
+            {/* OCLUSIÓN */}
+            {Object.keys(oclusionData).length > 0 && 
+              renderSeccion('🦷 Oclusión y Odontograma', [
+                // Clasificación de Angle
+                oclusionData.clasificacion_angle && [
+                  renderCampo('Relación Molar Derecho', oclusionData.clasificacion_angle.relacion_molar_derecho),
+                  renderCampo('Relación Molar Izquierdo', oclusionData.clasificacion_angle.relacion_molar_izquierdo),
+                  renderCampo('Relación Canina Derecho', oclusionData.clasificacion_angle.relacion_canina_derecho),
+                  renderCampo('Relación Canina Izquierdo', oclusionData.clasificacion_angle.relacion_canina_izquierdo)
+                ],
+                
+                // Armonía de maxilares
+                oclusionData.armonia_maxilares && [
+                  renderCampo('Amplitud Arco Superior', oclusionData.armonia_maxilares.amplitud_arco_superior),
+                  renderCampo('Bóveda Palatina', oclusionData.armonia_maxilares.boveda_palatina),
+                  renderCampo('Amplitud Arco Inferior', oclusionData.armonia_maxilares.amplitud_arco_inferior)
+                ],
+                
+                // Odontograma
+                oclusionData.odontograma && renderCampo('Observaciones Odontograma', oclusionData.odontograma.observaciones_generales)
+              ])
+            }
+
+            {/* DIAGNÓSTICO Y TRATAMIENTO */}
+            {renderSeccion('🩺 Diagnóstico y Tratamiento', [
+              renderCampo('Diagnóstico', historialSeleccionado.diagnostico),
+              renderCampo('Tratamiento Realizado', historialSeleccionado.tratamiento),
+              
+              // Plan de tratamiento
+              historialSeleccionado.plan_tratamiento && (() => {
+                const planData = parsearDatosJSON(historialSeleccionado.plan_tratamiento);
+                return [
+                  renderCampo('Plan Inmediato', planData.inmediato),
+                  renderCampo('Seguimiento', planData.seguimiento),
+                  renderCampo('Próxima Cita', planData.proxima_cita),
+                  renderLista('Recomendaciones', planData.recomendaciones),
+                  
+                  // Medicamentos prescritos
+                  planData.medicamentos_prescritos && Array.isArray(planData.medicamentos_prescritos) && (
+                    <div className="medicamentos-prescritos" key="medicamentos">
+                      <strong>💊 Medicamentos Prescritos:</strong>
+                      <div className="medicamentos-lista">
+                        {planData.medicamentos_prescritos.map((med, index) => (
+                          <div key={index} className="medicamento-item">
+                            <strong>{med.medicamento}</strong>
+                            <div>Dosis: {med.dosis}</div>
+                            {med.indicaciones && <div>Indicaciones: {med.indicaciones}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                ];
+              })()
+            ])}
+
+            {/* INFORMACIÓN ADICIONAL */}
+            <div className="informacion-adicional">
+              <div className="metadatos-historial">
+                <h4>📊 Información del Historial</h4>
+                <div className="metadatos-grid">
+                  <div className="metadato-item">
+                    <strong>Estado:</strong>
+                    <span className={`estado-badge ${historialSeleccionado.estado}`}>
+                      {historialSeleccionado.estado?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="metadato-item">
+                    <strong>Versión:</strong>
+                    <span>{historialSeleccionado.version || '1.0'}</span>
+                  </div>
+                  <div className="metadato-item">
+                    <strong>Fecha de Creación:</strong>
+                    <span>{formatearFecha(historialSeleccionado.created_at)}</span>
+                  </div>
+                  <div className="metadato-item">
+                    <strong>Última Actualización:</strong>
+                    <span>{formatearFecha(historialSeleccionado.updated_at)}</span>
+                  </div>
+                  {historialSeleccionado.pdf_filename && (
+                    <div className="metadato-item">
+                      <strong>PDF Generado:</strong>
+                      <span>✅ Disponible</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+       default:
       return (
         <div className="vista-no-encontrada">
           <h3>❌ Vista no encontrada</h3>
-          <p>La vista seleccionada no está disponible.</p>
+          <p>La vista "{vistaActiva}" no está disponible.</p>
+          <button 
+            onClick={() => setVistaActiva('resumen')} 
+            className="btn-vista-completa"
+          >
+            Ver Resumen
+          </button>
         </div>
       );
   }
 };
 
-  const onConsultaFinalizada = useCallback(async () => {
-    console.log('🏁 Consulta finalizada, actualizando datos...');
-    
+  // Función mejorada para generar PDF del historial completo
+  const generarPDFHistorial = useCallback(async () => {
     try {
-      await Promise.all([
-        cargarHistorialClinico(),
-        cargarCitasHistorial(),
-      ]);
+      console.log('📄 Generando PDF completo del historial clínico...');
       
-      console.log('✅ Datos actualizados después de finalizar consulta');
-    } catch (error) {
-      console.error('❌ Error al actualizar datos tras consulta:', error);
-    }
-  }, [cargarHistorialClinico, cargarCitasHistorial]);
+      if (!historialSeleccionado) {
+        alert('⚠️ Por favor selecciona un historial para generar el PDF');
+        return;
+      }
 
-// ✅ REEMPLAZA LA FUNCIÓN generarPDFHistorial COMPLETA por esta versión extendida:
-const generarPDFHistorial = useCallback(async () => {
-  try {
-    console.log('📄 Generando PDF completo del historial clínico...');
-    
+      // Configuración optimizada del PDF
+      const doc = new jsPDF('p', 'mm', 'a4');
+      let yPosition = 25;
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+      const pageWidth = doc.internal.pageSize.width - (margin * 2);
+
+      // Colores profesionales
+      const colorPrimario = [41, 128, 185]; // Azul profesional
+      const colorSecundario = [52, 73, 94]; // Gris oscuro
+      const colorTexto = [44, 62, 80]; // Gris muy oscuro
+      const colorLinea = [189, 195, 199]; // Gris claro
+
+      // Funciones auxiliares mejoradas
+      const verificarNuevaPagina = (espacioNecesario = 35) => {
+        if (yPosition + espacioNecesario > pageHeight - 30) {
+          doc.addPage();
+          yPosition = 25;
+          return true;
+        }
+        return false;
+      };
+
+      const agregarTituloSeccion = (titulo, numeracion = '') => {
+        verificarNuevaPagina(40);
+        
+        // Fondo para el título
+        doc.setFillColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+        doc.rect(margin, yPosition - 5, pageWidth, 12, 'F');
+        
+        // Texto del título
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        
+        const tituloCompleto = numeracion ? `${numeracion}. ${titulo}` : titulo;
+        const lineasTitulo = doc.splitTextToSize(tituloCompleto, pageWidth - 10);
+        
+        let alturaTotal = 0;
+        lineasTitulo.forEach((linea, index) => {
+          doc.text(linea, margin + 5, yPosition + 2 + (index * 6));
+          alturaTotal += 6;
+        });
+        
+        yPosition += Math.max(12, alturaTotal + 5);
+        yPosition += 8;
+        
+        // Reset color
+        doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.setFont('helvetica', 'normal');
+      };
+
+      const agregarCampo = (etiqueta, valor, negrita = false) => {
+        if (!valor || valor === 'No especificado' || valor === 'undefined' || valor === 'null') return;
+        
+        verificarNuevaPagina(15);
+        
+        // Etiqueta
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+        doc.text(`${etiqueta}:`, margin, yPosition);
+        
+        // Valor
+        doc.setFont(negrita ? 'bold' : 'normal');
+        doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        
+        const valorTexto = String(valor);
+        const lineasValor = doc.splitTextToSize(valorTexto, pageWidth - 50);
+        
+        lineasValor.forEach((linea, index) => {
+          const xPos = index === 0 ? margin + 45 : margin + 5;
+          const yPos = yPosition + (index * 5);
+          
+          if (index > 0) verificarNuevaPagina(10);
+          doc.text(linea, xPos, yPos);
+          
+          if (index === lineasValor.length - 1) {
+            yPosition = yPos + 8;
+          }
+        });
+      };
+
+      const agregarSubseccion = (titulo) => {
+        verificarNuevaPagina(20);
+        
+        // Línea decorativa
+        doc.setDrawColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPosition, margin + 30, yPosition);
+        
+        yPosition += 5;
+        
+        // Título de subsección
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+        doc.text(titulo, margin, yPosition);
+        yPosition += 10;
+        
+        // Reset
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+      };
+
+      // Parsear datos del historial seleccionado
+      const datosPersonales = parsearDatosJSON(historialSeleccionado.datos_personales);
+      const fichaIdentificacionData = parsearDatosJSON(historialSeleccionado.ficha_identificacion);
+      const motivoConsultaData = parsearDatosJSON(historialSeleccionado.motivo_consulta);
+      const antecedentesHFData = parsearDatosJSON(historialSeleccionado.antecedentes_heredo_familiares);
+      const antecedentesNPData = parsearDatosJSON(historialSeleccionado.antecedentes_personales_no_patologicos);
+      const antecedentesPPData = parsearDatosJSON(historialSeleccionado.antecedentes_personales_patologicos);
+      const examenExtrabucalData = parsearDatosJSON(historialSeleccionado.examen_extrabucal);
+      const examenIntrabucalData = parsearDatosJSON(historialSeleccionado.examen_intrabucal);
+      const oclusionData = parsearDatosJSON(historialSeleccionado.oclusion);
+
+      // Encabezado profesional
+      // Logo/Marca de agua (simulado)
+      doc.setFillColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+      doc.circle(margin + 10, yPosition, 8, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('H', margin + 7, yPosition + 3);
+
+      // Título principal
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
+      doc.text('HISTORIAL CLINICO ODONTOLOGICO', margin + 25, yPosition + 3);
+      
+      yPosition += 20;
+
+      // Información del encabezado en caja
+      doc.setFillColor(248, 249, 250);
+      doc.rect(margin, yPosition, pageWidth, 25, 'F');
+      doc.setDrawColor(colorLinea[0], colorLinea[1], colorLinea[2]);
+      doc.rect(margin, yPosition, pageWidth, 25);
+
+      const nombreCompleto = limpiarTexto(`${paciente?.nombre || ''} ${paciente?.apellido_paterno || ''} ${paciente?.apellido_materno || ''}`).trim();
+      
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+      doc.text(`PACIENTE: ${nombreCompleto}`, margin + 5, yPosition + 8);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Fecha de Consulta: ${formatearFecha(historialSeleccionado.fecha_consulta)}`, margin + 5, yPosition + 15);
+      doc.text(`Doctor Responsable: Dr. ${limpiarTexto(historialSeleccionado.doctor_nombre)}`, margin + 5, yPosition + 22);
+      
+      yPosition += 35;
+
+      // Secciones del historial
+      // 1. Información Personal
+      agregarTituloSeccion('INFORMACION PERSONAL DEL PACIENTE', '1');
+      agregarCampo('Nombre completo', nombreCompleto);
+      agregarCampo('Sexo', paciente?.sexo === 'M' ? 'Masculino' : paciente?.sexo === 'F' ? 'Femenino' : 'No especificado');
+      agregarCampo('Fecha de nacimiento', formatearFecha(paciente?.fecha_nacimiento || datosPersonales.fecha_nacimiento));
+      agregarCampo('Edad', `${calcularEdad(paciente?.fecha_nacimiento || datosPersonales.fecha_nacimiento)} años`);
+      agregarCampo('Telefono', limpiarTexto(paciente?.telefono || datosPersonales.telefono));
+      agregarCampo('Correo electronico', limpiarTexto(paciente?.correo_electronico || datosPersonales.email));
+      agregarCampo('Direccion', limpiarTexto(paciente?.calle_numero || datosPersonales.direccion));
+      agregarCampo('Numero de seguridad social', limpiarTexto(paciente?.numero_seguridad_social || datosPersonales.numero_seguridad_social));
+      yPosition += 10;
+
+      // 2. Ficha de Identificación
+      if (Object.keys(fichaIdentificacionData).length > 0) {
+        agregarTituloSeccion('FICHA DE IDENTIFICACION', '2');
+        agregarCampo('Edad', fichaIdentificacionData.edad ? `${fichaIdentificacionData.edad} años` : '');
+        agregarCampo('Estado civil', limpiarTexto(fichaIdentificacionData.estado_civil));
+        agregarCampo('Ocupacion', limpiarTexto(fichaIdentificacionData.ocupacion));
+        agregarCampo('Escolaridad', limpiarTexto(fichaIdentificacionData.escolaridad));
+        agregarCampo('Lugar de trabajo', limpiarTexto(fichaIdentificacionData.lugar_trabajo));
+        
+        if (fichaIdentificacionData.contacto_emergencia) {
+          agregarSubseccion('Contacto de Emergencia');
+          agregarCampo('Nombre', limpiarTexto(fichaIdentificacionData.contacto_emergencia.nombre));
+          agregarCampo('Parentesco', limpiarTexto(fichaIdentificacionData.contacto_emergencia.parentesco));
+          agregarCampo('Telefono', limpiarTexto(fichaIdentificacionData.contacto_emergencia.telefono));
+        }
+        yPosition += 10;
+      }
+
+      // 3. Motivo de Consulta
+      if (Object.keys(motivoConsultaData).length > 0 || historialSeleccionado.motivo_consulta_texto) {
+        agregarTituloSeccion('MOTIVO DE CONSULTA', '3');
+        agregarCampo('Motivo principal', limpiarTexto(motivoConsultaData.motivo_principal || historialSeleccionado.motivo_consulta_texto));
+        agregarCampo('Padecimiento actual', limpiarTexto(motivoConsultaData.padecimiento_actual));
+        agregarCampo('Inicio de sintomas', limpiarTexto(motivoConsultaData.inicio_sintomas));
+        agregarCampo('Tipo de dolor', limpiarTexto(motivoConsultaData.tipo_dolor));
+        agregarCampo('Intensidad del dolor', motivoConsultaData.intensidad_dolor ? `${motivoConsultaData.intensidad_dolor}/10` : '');
+        agregarCampo('Urgencia', limpiarTexto(motivoConsultaData.urgencia));
+        agregarCampo('Evolucion', limpiarTexto(motivoConsultaData.evolucion));
+        agregarCampo('Tratamientos previos', limpiarTexto(motivoConsultaData.tratamientos_previos));
+        
+        if (motivoConsultaData.factores_desencadenantes && Array.isArray(motivoConsultaData.factores_desencadenantes)) {
+          agregarCampo('Factores desencadenantes', limpiarTexto(motivoConsultaData.factores_desencadenantes.join(', ')));
+        }
+        
+        if (motivoConsultaData.sintomas_asociados && Array.isArray(motivoConsultaData.sintomas_asociados)) {
+          agregarCampo('Sintomas asociados', limpiarTexto(motivoConsultaData.sintomas_asociados.join(', ')));
+        }
+        yPosition += 10;
+      }
+
+      // 4. Antecedentes Heredo-Familiares
+      if (Object.keys(antecedentesHFData).length > 0) {
+        agregarTituloSeccion('ANTECEDENTES HEREDO-FAMILIARES', '4');
+        
+        if (antecedentesHFData.padre) {
+          agregarSubseccion('Antecedentes Paternos');
+          if (typeof antecedentesHFData.padre === 'object') {
+            agregarCampo('Estado', antecedentesHFData.padre.vivo ? 'Vivo' : 'Fallecido');
+            agregarCampo('Edad', limpiarTexto(antecedentesHFData.padre.edad));
+            agregarCampo('Enfermedades', limpiarTexto(Array.isArray(antecedentesHFData.padre.enfermedades) ? 
+                        antecedentesHFData.padre.enfermedades.join(', ') : antecedentesHFData.padre.enfermedades));
+          } else {
+            agregarCampo('Antecedentes', limpiarTexto(Array.isArray(antecedentesHFData.padre) ? 
+                        antecedentesHFData.padre.join(', ') : antecedentesHFData.padre));
+          }
+        }
+        
+        if (antecedentesHFData.madre) {
+          agregarSubseccion('Antecedentes Maternos');
+          if (typeof antecedentesHFData.madre === 'object') {
+            agregarCampo('Estado', antecedentesHFData.madre.vivo ? 'Vivo' : 'Fallecido');
+            agregarCampo('Edad', limpiarTexto(antecedentesHFData.madre.edad));
+            agregarCampo('Enfermedades', limpiarTexto(Array.isArray(antecedentesHFData.madre.enfermedades) ? 
+                        antecedentesHFData.madre.enfermedades.join(', ') : antecedentesHFData.madre.enfermedades));
+          } else {
+            agregarCampo('Antecedentes', limpiarTexto(Array.isArray(antecedentesHFData.madre) ? 
+                        antecedentesHFData.madre.join(', ') : antecedentesHFData.madre));
+          }
+        }
+        yPosition += 10;
+      }
+
+      // Continuar con las demás secciones...
+      // 5. Antecedentes Personales No Patológicos
+      if (Object.keys(antecedentesNPData).length > 0) {
+        agregarTituloSeccion('ANTECEDENTES PERSONALES NO PATOLOGICOS', '5');
+        
+        if (antecedentesNPData.habitos) {
+          agregarSubseccion('Habitos');
+          const habitos = antecedentesNPData.habitos;
+          
+          if (habitos.tabaquismo) {
+            agregarCampo('Tabaquismo', habitos.tabaquismo.fuma ? 'Si' : 'No');
+            if (habitos.tabaquismo.cigarrillos_dia) {
+              agregarCampo('Cigarrillos por dia', limpiarTexto(habitos.tabaquismo.cigarrillos_dia));
+            }
+          }
+          
+          if (habitos.alcoholismo) {
+            agregarCampo('Consume alcohol', habitos.alcoholismo.consume ? 'Si' : 'No');
+            agregarCampo('Frecuencia', limpiarTexto(habitos.alcoholismo.frecuencia));
+            agregarCampo('Tipo de bebida', limpiarTexto(habitos.alcoholismo.tipo_bebida));
+          }
+        }
+        yPosition += 10;
+      }
+
+      // 6. Diagnóstico y Tratamiento
+      agregarTituloSeccion('DIAGNOSTICO Y TRATAMIENTO', '6');
+      agregarCampo('Diagnostico', limpiarTexto(historialSeleccionado.diagnostico) || 'No especificado', true);
+      agregarCampo('Tratamiento realizado', limpiarTexto(historialSeleccionado.tratamiento) || 'No especificado');
+      
+      if (historialSeleccionado.plan_tratamiento) {
+        const planData = parsearDatosJSON(historialSeleccionado.plan_tratamiento);
+        
+        if (Object.keys(planData).length > 0) {
+          agregarSubseccion('Plan de Tratamiento');
+          
+          if (planData.inmediato) {
+            agregarCampo('Tratamiento inmediato', limpiarTexto(planData.inmediato));
+          }
+          if (planData.seguimiento) {
+            agregarCampo('Seguimiento', limpiarTexto(planData.seguimiento));
+          }
+          if (planData.recomendaciones) {
+            const recomendaciones = Array.isArray(planData.recomendaciones) ? 
+              planData.recomendaciones.join(', ') : planData.recomendaciones;
+            agregarCampo('Recomendaciones', limpiarTexto(recomendaciones));
+          }
+        }
+      }
+
+      // Pie de página profesional
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        
+        // Línea superior del pie
+        doc.setDrawColor(colorLinea[0], colorLinea[1], colorLinea[2]);
+        doc.setLineWidth(0.5);
+        doc.line(margin, doc.internal.pageSize.height - 20, margin + pageWidth, doc.internal.pageSize.height - 20);
+        
+        // Información del pie
+        doc.setFontSize(8);
+        doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.text(`Pagina ${i} de ${totalPages}`, doc.internal.pageSize.width - margin, doc.internal.pageSize.height - 12, { align: 'right' });
+        doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, margin, doc.internal.pageSize.height - 12);
+        doc.text('Sistema Odontologico - Historial Clinico', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 12, { align: 'center' });
+      }
+
+      // Guardar PDF
+      const nombrePaciente = limpiarTexto(`${paciente?.nombre || 'Paciente'}_${paciente?.apellido_paterno || ''}`).replace(/\s+/g, '_');
+      const fechaConsulta = historialSeleccionado.fecha_consulta?.replace(/-/g, '') || 'SinFecha';
+      const nombreArchivo = `Historial_${nombrePaciente}_${fechaConsulta}.pdf`;
+      
+      doc.save(nombreArchivo);
+      
+      console.log('✅ PDF profesional generado exitosamente:', nombreArchivo);
+      alert(`✅ PDF del historial clínico generado exitosamente!\n\nArchivo: ${nombreArchivo}\n\nDiseño profesional y limpio aplicado.`);
+
+    } catch (error) {
+      console.error('❌ Error generando PDF:', error);
+      alert(`❌ Error al generar PDF: ${error.message}`);
+    }
+  }, [historialSeleccionado, paciente, formatearFecha, calcularEdad, parsearDatosJSON]);
+
+  // Función para el botón PDF
+  const handleGenerarPDF = useCallback(() => {
     if (!historialSeleccionado) {
       alert('⚠️ Por favor selecciona un historial para generar el PDF');
       return;
     }
-
-    // ✅ CONFIGURACIÓN OPTIMIZADA DEL PDF
-    const doc = new jsPDF('p', 'mm', 'a4');
-    let yPosition = 25;
-    const pageHeight = doc.internal.pageSize.height;
-    const margin = 20;
-    const pageWidth = doc.internal.pageSize.width - (margin * 2);
-
-    // ✅ COLORES PROFESIONALES
-    const colorPrimario = [41, 128, 185]; // Azul profesional
-    const colorSecundario = [52, 73, 94]; // Gris oscuro
-    const colorTexto = [44, 62, 80]; // Gris muy oscuro
-    const colorLinea = [189, 195, 199]; // Gris claro
-
-    // ✅ FUNCIONES AUXILIARES MEJORADAS
-    const verificarNuevaPagina = (espacioNecesario = 35) => {
-      if (yPosition + espacioNecesario > pageHeight - 30) {
-        doc.addPage();
-        yPosition = 25;
-        return true;
-      }
-      return false;
-    };
-
-    const agregarTituloSeccion = (titulo, numeracion = '') => {
-      verificarNuevaPagina(40);
-      
-      // Fondo para el título
-      doc.setFillColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-      doc.rect(margin, yPosition - 5, pageWidth, 12, 'F');
-      
-      // Texto del título
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      
-      const tituloCompleto = numeracion ? `${numeracion}. ${titulo}` : titulo;
-      const lineasTitulo = doc.splitTextToSize(tituloCompleto, pageWidth - 10);
-      
-      let alturaTotal = 0;
-      lineasTitulo.forEach((linea, index) => {
-        doc.text(linea, margin + 5, yPosition + 2 + (index * 6));
-        alturaTotal += 6;
-      });
-      
-      yPosition += Math.max(12, alturaTotal + 5);
-      yPosition += 8;
-      
-      // Reset color
-      doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
-      doc.setFont('helvetica', 'normal');
-    };
-
-    const agregarCampo = (etiqueta, valor, negrita = false) => {
-      if (!valor || valor === 'No especificado' || valor === 'undefined' || valor === 'null') return;
-      
-      verificarNuevaPagina(15);
-      
-      // Etiqueta
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
-      doc.text(`${etiqueta}:`, margin, yPosition);
-      
-      // Valor
-      doc.setFont(negrita ? 'bold' : 'normal');
-      doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
-      
-      const valorTexto = String(valor);
-      const lineasValor = doc.splitTextToSize(valorTexto, pageWidth - 50);
-      
-      lineasValor.forEach((linea, index) => {
-        const xPos = index === 0 ? margin + 45 : margin + 5;
-        const yPos = yPosition + (index * 5);
-        
-        if (index > 0) verificarNuevaPagina(10);
-        doc.text(linea, xPos, yPos);
-        
-        if (index === lineasValor.length - 1) {
-          yPosition = yPos + 8;
-        }
-      });
-    };
-
-    const agregarSubseccion = (titulo) => {
-      verificarNuevaPagina(20);
-      
-      // Línea decorativa
-      doc.setDrawColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-      doc.setLineWidth(0.5);
-      doc.line(margin, yPosition, margin + 30, yPosition);
-      
-      yPosition += 5;
-      
-      // Título de subsección
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-      doc.text(titulo, margin, yPosition);
-      yPosition += 10;
-      
-      // Reset
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
-    };
-
-    const parsearDatosJSON = (datos) => {
-      try {
-        if (typeof datos === 'string' && datos.startsWith('{')) {
-          return JSON.parse(datos);
-        }
-        if (typeof datos === 'object' && datos !== null) {
-          return datos;
-        }
-        return {};
-      } catch (error) {
-        console.warn('Error parseando JSON:', error);
-        return {};
-      }
-    };
-
-    const limpiarTexto = (texto) => {
-      if (!texto) return '';
-      return String(texto)
-        .replace(/[^\w\s\-\.,:;()\[\]áéíóúñüÁÉÍÓÚÑÜ]/g, '')
-        .trim();
-    };
-
-    // ✅ ENCABEZADO PROFESIONAL
-    // Logo/Marca de agua (simulado)
-    doc.setFillColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-    doc.circle(margin + 10, yPosition, 8, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('H', margin + 7, yPosition + 3);
-
-    // Título principal
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(colorPrimario[0], colorPrimario[1], colorPrimario[2]);
-    doc.text('HISTORIAL CLINICO ODONTOLOGICO', margin + 25, yPosition + 3);
     
-    yPosition += 20;
-
-    // Información del encabezado en caja
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, yPosition, pageWidth, 25, 'F');
-    doc.setDrawColor(colorLinea[0], colorLinea[1], colorLinea[2]);
-    doc.rect(margin, yPosition, pageWidth, 25);
-
-    const nombreCompleto = limpiarTexto(`${paciente?.nombre || ''} ${paciente?.apellido_paterno || ''} ${paciente?.apellido_materno || ''}`).trim();
-    
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
-    doc.text(`PACIENTE: ${nombreCompleto}`, margin + 5, yPosition + 8);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Fecha de Consulta: ${formatearFecha(historialSeleccionado.fecha_consulta)}`, margin + 5, yPosition + 15);
-    doc.text(`Doctor Responsable: Dr. ${limpiarTexto(historialSeleccionado.doctor_nombre)}`, margin + 5, yPosition + 22);
-    
-    yPosition += 35;
-
-    // ✅ SECCIÓN 1: INFORMACIÓN PERSONAL
-    agregarTituloSeccion('INFORMACION PERSONAL DEL PACIENTE', '1');
-    
-    const datosPersonales = parsearDatosJSON(historialSeleccionado.datos_personales);
-    
-    agregarCampo('Nombre completo', nombreCompleto);
-    agregarCampo('Sexo', paciente?.sexo === 'M' ? 'Masculino' : paciente?.sexo === 'F' ? 'Femenino' : 'No especificado');
-    agregarCampo('Fecha de nacimiento', formatearFecha(paciente?.fecha_nacimiento || datosPersonales.fecha_nacimiento));
-    agregarCampo('Edad', `${calcularEdad(paciente?.fecha_nacimiento || datosPersonales.fecha_nacimiento)} años`);
-    agregarCampo('Telefono', limpiarTexto(paciente?.telefono || datosPersonales.telefono));
-    agregarCampo('Correo electronico', limpiarTexto(paciente?.correo_electronico || datosPersonales.email));
-    agregarCampo('Direccion', limpiarTexto(paciente?.calle_numero || datosPersonales.direccion));
-    agregarCampo('Numero de seguridad social', limpiarTexto(paciente?.numero_seguridad_social || datosPersonales.numero_seguridad_social));
-    
-    yPosition += 10;
-
-    // ✅ SECCIÓN 2: FICHA DE IDENTIFICACIÓN
-    const fichaIdentificacion = parsearDatosJSON(historialSeleccionado.ficha_identificacion);
-    if (Object.keys(fichaIdentificacion).length > 0) {
-      agregarTituloSeccion('FICHA DE IDENTIFICACION', '2');
-      
-      agregarCampo('Edad', fichaIdentificacion.edad ? `${fichaIdentificacion.edad} años` : '');
-      agregarCampo('Estado civil', limpiarTexto(fichaIdentificacion.estado_civil));
-      agregarCampo('Ocupacion', limpiarTexto(fichaIdentificacion.ocupacion));
-      agregarCampo('Escolaridad', limpiarTexto(fichaIdentificacion.escolaridad));
-      agregarCampo('Lugar de trabajo', limpiarTexto(fichaIdentificacion.lugar_trabajo));
-      
-      if (fichaIdentificacion.contacto_emergencia) {
-        agregarSubseccion('Contacto de Emergencia');
-        agregarCampo('Nombre', limpiarTexto(fichaIdentificacion.contacto_emergencia.nombre));
-        agregarCampo('Parentesco', limpiarTexto(fichaIdentificacion.contacto_emergencia.parentesco));
-        agregarCampo('Telefono', limpiarTexto(fichaIdentificacion.contacto_emergencia.telefono));
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 3: MOTIVO DE CONSULTA
-    const motivoConsulta = parsearDatosJSON(historialSeleccionado.motivo_consulta);
-    if (Object.keys(motivoConsulta).length > 0 || historialSeleccionado.motivo_consulta_texto) {
-      agregarTituloSeccion('MOTIVO DE CONSULTA', '3');
-      
-      agregarCampo('Motivo principal', limpiarTexto(motivoConsulta.motivo_principal || historialSeleccionado.motivo_consulta_texto));
-      agregarCampo('Padecimiento actual', limpiarTexto(motivoConsulta.padecimiento_actual));
-      agregarCampo('Inicio de sintomas', limpiarTexto(motivoConsulta.inicio_sintomas));
-      agregarCampo('Tipo de dolor', limpiarTexto(motivoConsulta.tipo_dolor));
-      agregarCampo('Intensidad del dolor', motivoConsulta.intensidad_dolor ? `${motivoConsulta.intensidad_dolor}/10` : '');
-      agregarCampo('Urgencia', limpiarTexto(motivoConsulta.urgencia));
-      agregarCampo('Evolucion', limpiarTexto(motivoConsulta.evolucion));
-      agregarCampo('Tratamientos previos', limpiarTexto(motivoConsulta.tratamientos_previos));
-      
-      if (motivoConsulta.factores_desencadenantes && Array.isArray(motivoConsulta.factores_desencadenantes)) {
-        agregarCampo('Factores desencadenantes', limpiarTexto(motivoConsulta.factores_desencadenantes.join(', ')));
-      }
-      
-      if (motivoConsulta.sintomas_asociados && Array.isArray(motivoConsulta.sintomas_asociados)) {
-        agregarCampo('Sintomas asociados', limpiarTexto(motivoConsulta.sintomas_asociados.join(', ')));
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 4: ANTECEDENTES HEREDO-FAMILIARES
-    const antecedentesHF = parsearDatosJSON(historialSeleccionado.antecedentes_heredo_familiares);
-    if (Object.keys(antecedentesHF).length > 0) {
-      agregarTituloSeccion('ANTECEDENTES HEREDO-FAMILIARES', '4');
-      
-      if (antecedentesHF.padre) {
-        agregarSubseccion('Antecedentes Paternos');
-        if (typeof antecedentesHF.padre === 'object') {
-          agregarCampo('Estado', antecedentesHF.padre.vivo ? 'Vivo' : 'Fallecido');
-          agregarCampo('Edad', limpiarTexto(antecedentesHF.padre.edad));
-          agregarCampo('Enfermedades', limpiarTexto(Array.isArray(antecedentesHF.padre.enfermedades) ? 
-                      antecedentesHF.padre.enfermedades.join(', ') : antecedentesHF.padre.enfermedades));
-        } else {
-          agregarCampo('Antecedentes', limpiarTexto(Array.isArray(antecedentesHF.padre) ? 
-                      antecedentesHF.padre.join(', ') : antecedentesHF.padre));
-        }
-      }
-      
-      if (antecedentesHF.madre) {
-        agregarSubseccion('Antecedentes Maternos');
-        if (typeof antecedentesHF.madre === 'object') {
-          agregarCampo('Estado', antecedentesHF.madre.vivo ? 'Vivo' : 'Fallecido');
-          agregarCampo('Edad', limpiarTexto(antecedentesHF.madre.edad));
-          agregarCampo('Enfermedades', limpiarTexto(Array.isArray(antecedentesHF.madre.enfermedades) ? 
-                      antecedentesHF.madre.enfermedades.join(', ') : antecedentesHF.madre.enfermedades));
-        } else {
-          agregarCampo('Antecedentes', limpiarTexto(Array.isArray(antecedentesHF.madre) ? 
-                      antecedentesHF.madre.join(', ') : antecedentesHF.madre));
-        }
-      }
-      
-      if (antecedentesHF.hermanos) {
-        agregarSubseccion('Hermanos');
-        if (typeof antecedentesHF.hermanos === 'object') {
-          agregarCampo('Numero de hermanos', limpiarTexto(antecedentesHF.hermanos.numero));
-          agregarCampo('Enfermedades relevantes', limpiarTexto(Array.isArray(antecedentesHF.hermanos.enfermedades_relevantes) ? 
-                      antecedentesHF.hermanos.enfermedades_relevantes.join(', ') : antecedentesHF.hermanos.enfermedades_relevantes));
-        } else {
-          agregarCampo('Antecedentes', limpiarTexto(Array.isArray(antecedentesHF.hermanos) ? 
-                      antecedentesHF.hermanos.join(', ') : antecedentesHF.hermanos));
-        }
-      }
-      
-      if (antecedentesHF.abuelos_paternos) {
-        agregarCampo('Abuelos paternos', limpiarTexto(Array.isArray(antecedentesHF.abuelos_paternos) ? 
-                    antecedentesHF.abuelos_paternos.join(', ') : antecedentesHF.abuelos_paternos));
-      }
-      
-      if (antecedentesHF.abuelos_maternos) {
-        agregarCampo('Abuelos maternos', limpiarTexto(Array.isArray(antecedentesHF.abuelos_maternos) ? 
-                    antecedentesHF.abuelos_maternos.join(', ') : antecedentesHF.abuelos_maternos));
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 5: ANTECEDENTES PERSONALES NO PATOLÓGICOS
-    const antecedentesNP = parsearDatosJSON(historialSeleccionado.antecedentes_personales_no_patologicos);
-    if (Object.keys(antecedentesNP).length > 0) {
-      agregarTituloSeccion('ANTECEDENTES PERSONALES NO PATOLOGICOS', '5');
-      
-      if (antecedentesNP.habitos) {
-        agregarSubseccion('Habitos');
-        const habitos = antecedentesNP.habitos;
-        
-        if (habitos.tabaquismo) {
-          agregarCampo('Tabaquismo', habitos.tabaquismo.fuma ? 'Si' : 'No');
-          if (habitos.tabaquismo.cigarrillos_dia) {
-            agregarCampo('Cigarrillos por dia', limpiarTexto(habitos.tabaquismo.cigarrillos_dia));
-          }
-        }
-        
-        if (habitos.alcoholismo) {
-          agregarCampo('Consume alcohol', habitos.alcoholismo.consume ? 'Si' : 'No');
-          agregarCampo('Frecuencia', limpiarTexto(habitos.alcoholismo.frecuencia));
-          agregarCampo('Tipo de bebida', limpiarTexto(habitos.alcoholismo.tipo_bebida));
-        }
-        
-        if (habitos.drogas !== undefined) {
-          agregarCampo('Drogas', habitos.drogas ? 'Si' : 'No');
-        }
-      }
-      
-      if (antecedentesNP.higiene_bucal) {
-        agregarSubseccion('Higiene Bucal');
-        const higiene = antecedentesNP.higiene_bucal;
-        agregarCampo('Frecuencia de cepillado', limpiarTexto(higiene.cepillado_frecuencia));
-        agregarCampo('Tipo de cepillo', limpiarTexto(higiene.tipo_cepillo));
-        agregarCampo('Usa hilo dental', higiene.hilo_dental ? 'Si' : 'No');
-        agregarCampo('Enjuague bucal', higiene.enjuague_bucal ? 'Si' : 'No');
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 6: ANTECEDENTES PERSONALES PATOLÓGICOS
-    const antecedentesPP = parsearDatosJSON(historialSeleccionado.antecedentes_personales_patologicos);
-    if (Object.keys(antecedentesPP).length > 0) {
-      agregarTituloSeccion('ANTECEDENTES PERSONALES PATOLOGICOS', '6');
-      
-      agregarSubseccion('Signos Vitales');
-      agregarCampo('Temperatura', antecedentesPP.temperatura ? `${antecedentesPP.temperatura} C` : '');
-      if (antecedentesPP.tension_arterial_sistolica && antecedentesPP.tension_arterial_diastolica) {
-        agregarCampo('Tension arterial', `${antecedentesPP.tension_arterial_sistolica}/${antecedentesPP.tension_arterial_diastolica} mmHg`);
-      }
-      agregarCampo('Frecuencia cardiaca', antecedentesPP.frecuencia_cardiaca ? `${antecedentesPP.frecuencia_cardiaca} lpm` : '');
-      agregarCampo('Frecuencia respiratoria', antecedentesPP.frecuencia_respiratoria ? `${antecedentesPP.frecuencia_respiratoria} rpm` : '');
-      
-      if (antecedentesPP.somatometria) {
-        agregarSubseccion('Somatometria');
-        const somato = antecedentesPP.somatometria;
-        agregarCampo('Peso', limpiarTexto(somato.peso));
-        agregarCampo('Talla', limpiarTexto(somato.talla));
-        agregarCampo('IMC', limpiarTexto(somato.imc));
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 7: EXAMEN EXTRABUCAL
-    const examenExtrabucal = parsearDatosJSON(historialSeleccionado.examen_extrabucal);
-    if (Object.keys(examenExtrabucal).length > 0) {
-      agregarTituloSeccion('EXAMEN EXTRABUCAL', '7');
-      
-      agregarCampo('Aspecto general', limpiarTexto(examenExtrabucal.aspecto_general));
-      agregarCampo('Craneo', limpiarTexto(examenExtrabucal.craneo));
-      agregarCampo('Biotipo facial', limpiarTexto(examenExtrabucal.biotipo_facial));
-      agregarCampo('Perfil', limpiarTexto(examenExtrabucal.perfil));
-      
-      if (examenExtrabucal.apertura_maxima) {
-        agregarSubseccion('Articulacion Temporomandibular');
-        agregarCampo('Apertura maxima', `${examenExtrabucal.apertura_maxima} mm`);
-        agregarCampo('Lateralidad derecha', examenExtrabucal.lateralidad_derecha ? `${examenExtrabucal.lateralidad_derecha} mm` : '');
-        agregarCampo('Lateralidad izquierda', examenExtrabucal.lateralidad_izquierda ? `${examenExtrabucal.lateralidad_izquierda} mm` : '');
-      }
-      
-      yPosition += 10;
-    }
-
-    // ✅ SECCIÓN 8: EXAMEN INTRABUCAL
-    const examenIntrabucal = parsearDatosJSON(historialSeleccionado.examen_intrabucal);
-    if (Object.keys(examenIntrabucal).length > 0) {
-      agregarTituloSeccion('EXAMEN INTRABUCAL', '8');
-      
-      agregarCampo('Higiene bucal', limpiarTexto(examenIntrabucal.higiene_bucal));
-      agregarCampo('Encias', limpiarTexto(examenIntrabucal.encias));
-      agregarCampo('Lengua', limpiarTexto(examenIntrabucal.lengua));
-      agregarCampo('Paladar', limpiarTexto(examenIntrabucal.paladar));
-      agregarCampo('Molar derecha', limpiarTexto(examenIntrabucal.molar_derecha));
-      agregarCampo('Molar izquierda', limpiarTexto(examenIntrabucal.molar_izquierda));
-      
-      yPosition += 10;
-    }
-
-    // ✅ DIAGNÓSTICO Y TRATAMIENTO
-    agregarTituloSeccion('DIAGNOSTICO Y TRATAMIENTO', '9');
-    
-    agregarCampo('Diagnostico', limpiarTexto(historialSeleccionado.diagnostico) || 'No especificado', true);
-    agregarCampo('Tratamiento realizado', limpiarTexto(historialSeleccionado.tratamiento) || 'No especificado');
-    
-    if (historialSeleccionado.plan_tratamiento) {
-      const planData = parsearDatosJSON(historialSeleccionado.plan_tratamiento);
-      
-      if (Object.keys(planData).length > 0) {
-        agregarSubseccion('Plan de Tratamiento');
-        
-        if (planData.inmediato) {
-          agregarCampo('Tratamiento inmediato', limpiarTexto(planData.inmediato));
-        }
-        if (planData.seguimiento) {
-          agregarCampo('Seguimiento', limpiarTexto(planData.seguimiento));
-        }
-        if (planData.recomendaciones) {
-          const recomendaciones = Array.isArray(planData.recomendaciones) ? 
-            planData.recomendaciones.join(', ') : planData.recomendaciones;
-          agregarCampo('Recomendaciones', limpiarTexto(recomendaciones));
-        }
-      }
-    }
-
-    // ✅ PIE DE PÁGINA PROFESIONAL
-    const totalPages = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      
-      // Línea superior del pie
-      doc.setDrawColor(colorLinea[0], colorLinea[1], colorLinea[2]);
-      doc.setLineWidth(0.5);
-      doc.line(margin, doc.internal.pageSize.height - 20, margin + pageWidth, doc.internal.pageSize.height - 20);
-      
-      // Información del pie
-      doc.setFontSize(8);
-      doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
-      doc.setFont('helvetica', 'normal');
-      
-      doc.text(`Pagina ${i} de ${totalPages}`, doc.internal.pageSize.width - margin, doc.internal.pageSize.height - 12, { align: 'right' });
-      doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, margin, doc.internal.pageSize.height - 12);
-      doc.text('Sistema Odontologico - Historial Clinico', doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 12, { align: 'center' });
-    }
-
-    // ✅ GUARDAR PDF
-    const nombrePaciente = limpiarTexto(`${paciente?.nombre || 'Paciente'}_${paciente?.apellido_paterno || ''}`).replace(/\s+/g, '_');
-    const fechaConsulta = historialSeleccionado.fecha_consulta?.replace(/-/g, '') || 'SinFecha';
-    const nombreArchivo = `Historial_${nombrePaciente}_${fechaConsulta}.pdf`;
-    
-    doc.save(nombreArchivo);
-    
-    console.log('✅ PDF profesional generado exitosamente:', nombreArchivo);
-    alert(`✅ PDF del historial clínico generado exitosamente!\n\nArchivo: ${nombreArchivo}\n\nDiseño profesional y limpio aplicado.`);
-
-  } catch (error) {
-    console.error('❌ Error generando PDF:', error);
-    alert(`❌ Error al generar PDF: ${error.message}`);
-  }
-}, [historialSeleccionado, paciente, formatearFecha, calcularEdad]);
-
-// ✅ FUNCIÓN PARA EL BOTÓN PDF
-const handleGenerarPDF = useCallback(() => {
-  if (!historialSeleccionado) {
-    alert('⚠️ Por favor selecciona un historial para generar el PDF');
-    return;
-  }
-  
-  generarPDFHistorial();
-}, [generarPDFHistorial, historialSeleccionado]);
+    generarPDFHistorial();
+  }, [generarPDFHistorial, historialSeleccionado]);
 
   // Función principal para renderizar contenido según vista activa
   const renderContenidoPrincipal = () => {
-  switch (vistaActiva) {
-    case 'estudios':
-      return (
-        <EstudiosLaboratorioSection
-          estudiosLaboratorio={estudiosLaboratorio}
-          loadingEstudios={loadingEstudios}
-          formatearFecha={formatearFecha}
-          buildApiUrl={buildApiUrl}
-          onSolicitarNuevo={solicitarNuevoEstudio}
-          onRecargar={cargarEstudiosLaboratorio}
-        />
-      );
-      
-    case 'radiografias':
-      return (
-        <RadiografiasSection
-          radiografias={radiografias}
-          loadingRadiografias={loadingRadiografias}
-          onSolicitarNueva={solicitarNuevaRadiografia}
-          formatearFecha={formatearFecha}
-          buildApiUrl={buildApiUrl}
-        />
-      );
-      
-    case 'historial':
-      return renderHistorialClinico();
-      
-    case 'citas':
-      return (
-        <CitasHistorialSection
-          citas={citasHistorial}
-          loadingCitas={loadingCitas}
-          formatearFecha={formatearFecha}
-          formatearFechaHora={formatearFechaHora}
-          buildApiUrl={buildApiUrl}
-          onActualizarEstado={actualizarEstadoCita}
-          getAuthHeaders={getAuthHeaders}
-          setCitasHistorial={setCitasHistorial}
-        />
-      );
-      
-    case 'consulta-actual':
-      return (
-        <ConsultaActual
-          paciente={paciente}
-          user={user}
-          buildApiUrl={buildApiUrl}
-          getAuthHeaders={getAuthHeaders}
-          mostrarConfirmacion={mostrarConfirmacion}
-          onConsultaFinalizada={onConsultaFinalizada}
-        />
-      );
-      
-    default:
-      return renderHistorialClinico();
-  }
-};
+    switch (vistaActiva) {
+      case 'estudios':
+        return (
+          <EstudiosLaboratorioSection
+            estudios={estudiosLaboratorio}
+            loadingEstudios={loadingEstudios}
+            onSolicitarNuevo={solicitarNuevoEstudio}
+            formatearFecha={formatearFecha}
+            buildApiUrl={buildApiUrl}
+            getAuthHeaders={getAuthHeaders}
+          />
+        );
+        
+      case 'radiografias':
+        return (
+          <RadiografiasSection
+            radiografias={radiografias}
+            loadingRadiografias={loadingRadiografias}
+            onSolicitarNueva={solicitarNuevaRadiografia}
+            formatearFecha={formatearFecha}
+            buildApiUrl={buildApiUrl}
+            getAuthHeaders={getAuthHeaders}
+          />
+        );
+        
+      case 'resumen':
+        return renderHistorialClinico();
+        
+      case 'citas':
+        return (
+          <CitasHistorialSection
+            citas={citasHistorial}
+            loadingCitas={loadingCitas}
+            formatearFecha={formatearFecha}
+            formatearFechaHora={formatearFechaHora}
+            buildApiUrl={buildApiUrl}
+            onActualizarEstado={actualizarEstadoCita}
+            getAuthHeaders={getAuthHeaders}
+            setCitasHistorial={setCitasHistorial}
+          />
+        );
+        
+      case 'consulta-actual':
+        return (
+          <ConsultaActual
+            paciente={paciente}
+            user={user}
+            buildApiUrl={buildApiUrl}
+            getAuthHeaders={getAuthHeaders}
+            mostrarConfirmacion={mostrarConfirmacion}
+            onConsultaFinalizada={onConsultaFinalizada}
+          />
+        );
+        
+      default:
+        return renderHistorialClinico();
+    }
+  };
 
-// === VALIDACIONES Y ESTADOS DE CARGA MODIFICADOS ===
-// Busca esta sección al final de tu archivo HistorialPacienteIndividual.js
-// (aproximadamente líneas 1800-1850) y reemplázala por este código:
-
-  // === VALIDACIONES Y ESTADOS DE CARGA ===
+  // Validaciones y estados de carga
   if (idInvalido) {
     return (
       <div className="historial-container">
@@ -2390,7 +2452,7 @@ const handleGenerarPDF = useCallback(() => {
     );
   }
 
-  // ✅ LOADING DENTAL UNIFICADO PARA TODO
+  // Loading dental unificado para todo
   if (showDentalLoading || loading) {
     const mensaje = showDentalLoading 
       ? loadingMessage 
@@ -2425,7 +2487,7 @@ const handleGenerarPDF = useCallback(() => {
     );
   }
 
-  // === RENDER PRINCIPAL ===
+  // Render principal
   return (
     <div className="historial-container">
       {/* Header del paciente minimalista */}

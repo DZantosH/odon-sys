@@ -1,13 +1,7 @@
-/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS ===== */
-/* Paleta de colores:
-   - Azul cielo: #87CEEB (fondo principal)
-   - Blanco: #FFFFFF
-   - Azul marino: #1E3A8A 
-   - Gris claro: #F8FAFC
-   - Verde agua: #06D6A0
-*/
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 1 ===== */
+/* Variables y contenedor principal */
 
-/* Variables CSS para historial paciente */
+/* Variables CSS */
 :root {
   --primary-gradient: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
   --success-gradient: linear-gradient(135deg, #06D6A0 0%, #1E3A8A 100%);
@@ -24,13 +18,13 @@
 /* ===== CONTENEDOR PRINCIPAL ===== */
 .historial-container {
   min-height: 100vh;
-  background: #87CEEB; /* Azul cielo */
+  background: #87CEEB;
   padding: 24px;
-  padding-top: 94px; /* Espacio para navbar fijo */
+  padding-top: 94px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  color: #1E3A8A; /* Azul marino */
+  color: #1E3A8A;
 }
 
 /* ===== HEADER MINIMALISTA DEL PACIENTE ===== */
@@ -71,6 +65,9 @@
   gap: 24px;
   flex-wrap: wrap;
 }
+
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 2 ===== */
+/* Avatar e información del paciente */
 
 /* ===== AVATAR DEL PACIENTE ===== */
 .avatar-container {
@@ -134,6 +131,11 @@
   animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* ===== INFORMACIÓN DEL PACIENTE ===== */
 .info-paciente-minimalista {
   flex: 1;
@@ -149,7 +151,8 @@
   line-height: 1.2;
 }
 
-.detalles-paciente-grid {
+.detalles-paciente-grid,
+.detalles-paciente-grid-expandido {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
@@ -157,18 +160,56 @@
 
 .detalle-item-minimalista {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: rgba(6, 214, 160, 0.1);
-  border-radius: 8px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(6, 214, 160, 0.08);
+  border: 1px solid rgba(6, 214, 160, 0.2);
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 500;
+  transition: all 0.3s ease;
+  min-height: 60px;
+}
+
+.detalle-item-minimalista:hover {
+  background: rgba(6, 214, 160, 0.12);
+  border-color: rgba(6, 214, 160, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(6, 214, 160, 0.15);
 }
 
 .detalle-icono {
-  font-size: 16px;
+  font-size: 18px;
   flex-shrink: 0;
+  margin-top: 2px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.detalle-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.detalle-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1E3A8A;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  opacity: 0.8;
+  line-height: 1.2;
+}
+
+.detalle-valor {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1E3A8A;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 /* ===== ESTADÍSTICAS DEL PACIENTE ===== */
@@ -212,6 +253,9 @@
   margin-top: 4px;
   text-align: center;
 }
+
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 3 ===== */
+/* Navegación principal y contenido */
 
 /* ===== NAVEGACIÓN PRINCIPAL ===== */
 .navegacion-principal {
@@ -330,7 +374,7 @@
   box-shadow: 0 8px 20px rgba(6, 214, 160, 0.3);
 }
 
-/* ===== ESTADO VACÍO ===== */
+/* ===== ESTADOS VACÍOS ===== */
 .seccion-vacia {
   display: flex;
   flex-direction: column;
@@ -451,34 +495,15 @@
   border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 4 ===== */
+/* Información de estudios y historial clínico */
+
 /* ===== INFORMACIÓN DE ESTUDIOS ===== */
 .estudio-info {
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.info-item strong {
-  font-size: 12px;
-  font-weight: 600;
-  color: #1E3A8A;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.info-item span,
-.info-item p {
-  font-size: 14px;
-  color: #1E3A8A;
-  margin: 0;
-  line-height: 1.4;
 }
 
 .urgencia {
@@ -633,113 +658,9 @@
   box-shadow: 0 12px 28px rgba(6, 214, 160, 0.4);
 }
 
-/* ===== LAYOUT DE HISTORIAL ===== */
-.historial-layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: 20px;
-  height: 100%;
-  min-height: 500px;
-}
 
-.sidebar-historial {
-  background: rgba(248, 250, 252, 0.8);
-  border: 1px solid rgba(6, 214, 160, 0.2);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.sidebar-header {
-  padding: 20px;
-  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sidebar-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.btn-generar-pdf {
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  transition: var(--transition);
-}
-
-.btn-generar-pdf:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.lista-historiales {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.item-historial {
-  padding: 16px;
-  margin-bottom: 8px;
-  background: white;
-  border: 1px solid rgba(6, 214, 160, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.item-historial:hover {
-  background: rgba(6, 214, 160, 0.05);
-  border-color: #06D6A0;
-}
-
-.item-historial.activo {
-  background: rgba(6, 214, 160, 0.1);
-  border-color: #06D6A0;
-  box-shadow: var(--shadow-sm);
-}
-
-.fecha-historial {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1E3A8A;
-  margin-bottom: 4px;
-}
-
-.doctor-historial {
-  font-size: 12px;
-  color: #87CEEB;
-  margin-bottom: 4px;
-}
-
-.tipo-cita {
-  font-size: 11px;
-  color: #06D6A0;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.estado-historial {
-  margin-top: 8px;
-}
-
-.estado {
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 5 ===== */
+/* Contenido de historial y modales */
 
 /* ===== CONTENIDO DE HISTORIAL ===== */
 .contenido-historial {
@@ -1051,6 +972,9 @@
   cursor: not-allowed;
 }
 
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 6 ===== */
+/* Estados de carga, errores y responsive design */
+
 /* ===== DETALLES DE ESTUDIO ===== */
 .detalle-estudio {
   display: flex;
@@ -1183,11 +1107,6 @@
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .loading-section p {
   margin: 0;
   color: #1E3A8A;
@@ -1241,6 +1160,332 @@
   box-shadow: 0 8px 20px rgba(6, 214, 160, 0.3);
 }
 
+/* ===== VISTA COMPLETA HISTORIAL ===== */
+.vista-completa-historial {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.historial-completo-header {
+  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.historial-completo-header h2 {
+  margin: 0 0 15px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.info-consulta-completa {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 14px;
+}
+
+.info-consulta-completa span {
+  background: rgba(255,255,255,0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.seccion-historial-completa {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  border-left: 4px solid #06D6A0;
+}
+
+.titulo-seccion-completa {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #1E3A8A;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #F8FAFC;
+}
+
+.icono-seccion {
+  font-size: 24px;
+}
+
+.contenido-seccion-completa {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.campo-historial {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #06D6A0;
+}
+
+.campo-etiqueta {
+  color: #1E3A8A;
+  font-weight: 600;
+  min-width: 150px;
+  font-size: 14px;
+}
+
+.campo-valor {
+  color: #1E3A8A;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.lista-valores {
+  margin: 0;
+  padding-left: 20px;
+  color: #1E3A8A;
+}
+
+.lista-valores li {
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+/* ===== ELEMENTOS ESPECIALES ===== */
+.familiar-antecedente {
+  background: #e8f5e8;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 3px solid #06D6A0;
+}
+
+.familiar-antecedente strong {
+  color: #06D6A0;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.estado-familiar.vivo {
+  color: #06D6A0;
+  font-weight: 600;
+}
+
+.estado-familiar.finado {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.padecimiento-item {
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 3px solid #ffc107;
+  margin-bottom: 10px;
+}
+
+.padecimiento-item strong {
+  color: #856404;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.alteracion-gingival {
+  background: #f8d7da;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 3px solid #dc3545;
+  margin-bottom: 10px;
+}
+
+.alteracion-gingival strong {
+  color: #721c24;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.alteracion-gingival div {
+  font-size: 13px;
+  color: #495057;
+  margin-bottom: 3px;
+}
+
+.dientes-estado {
+  background: #e7f3ff;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid #007bff;
+}
+
+.dientes-estado h4 {
+  margin: 0 0 10px 0;
+  color: #0056b3;
+}
+
+.diente-estado {
+  display: inline-block;
+  margin: 3px 5px;
+  padding: 4px 8px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.diente-estado.presente {
+  background: #d4edda;
+  color: #155724;
+}
+
+.diente-estado.ausente {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ===== PLAN DE TRATAMIENTO ===== */
+.plan-estructurado {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 15px;
+}
+
+.plan-seccion {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 20px;
+  border-left: 4px solid #06D6A0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.plan-seccion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(6, 214, 160, 0.15);
+}
+
+.plan-seccion h4 {
+  color: #1E3A8A;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #F8FAFC;
+}
+
+.plan-seccion p {
+  color: #1E3A8A;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+
+.lista-recomendaciones,
+.lista-plan {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.lista-recomendaciones li,
+.lista-plan li {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border-left: 4px solid #06D6A0;
+  color: #1E3A8A;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.lista-recomendaciones li:hover,
+.lista-plan li:hover {
+  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
+  transform: translateX(5px);
+  box-shadow: 0 3px 10px rgba(6, 214, 160, 0.2);
+}
+
+.lista-recomendaciones li::before,
+.lista-plan li::before {
+  content: "✓";
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #06D6A0;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.medicamentos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.medicamento-item {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  padding: 16px;
+  border-radius: 10px;
+  border-left: 4px solid #ff9800;
+  transition: all 0.3s ease;
+}
+
+.medicamento-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2);
+}
+
+.medicamento-item strong {
+  display: block;
+  color: #e65100;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.medicamento-item span {
+  display: block;
+  color: #f57c00;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.medicamento-item em {
+  display: block;
+  color: #ff8f00;
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* ===== HISTORIAL PACIENTE INDIVIDUAL CSS - PARTE 7 FINAL ===== */
+/* Responsive design, animaciones y utilidades */
+
 /* ===== RESPONSIVE DESIGN ===== */
 /* Tablets grandes (1024px - 1200px) */
 @media (max-width: 1200px) {
@@ -1254,7 +1499,8 @@
     gap: 16px;
   }
   
-  .detalles-paciente-grid {
+  .detalles-paciente-grid,
+  .detalles-paciente-grid-expandido {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
   
@@ -1327,7 +1573,8 @@
     font-size: 24px;
   }
   
-  .detalles-paciente-grid {
+  .detalles-paciente-grid,
+  .detalles-paciente-grid-expandido {
     grid-template-columns: 1fr;
     gap: 8px;
   }
@@ -1581,7 +1828,7 @@
   }
 }
 
-/* ===== ANIMACIONES Y TRANSICIONES MEJORADAS ===== */
+/* ===== ANIMACIONES Y TRANSICIONES ===== */
 .estudio-card {
   animation: fadeInUp 0.3s ease-out;
 }
@@ -1684,1097 +1931,202 @@
   100% { transform: rotate(360deg); }
 }
 
-/* ===== ESTILOS PARA AVATAR MEJORADO ===== */
-/* Agregar al final de tu archivo HistorialPacienteIndividual.css */
-
-.avatar-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ===== UTILIDADES ===== */
+.text-center {
+  text-align: center !important;
 }
 
-.avatar-paciente {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+.mb-0 {
+  margin-bottom: 0 !important;
 }
 
-.avatar-paciente:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
+.mt-20 {
+  margin-top: 20px !important;
 }
 
-.avatar-paciente.uploading {
-  cursor: not-allowed;
-  opacity: 0.8;
-}
-
-/* Imagen del avatar */
-.avatar-imagen {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-/* Iniciales del avatar */
-.avatar-iniciales {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  font-weight: 700;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 50%;
-}
-
-/* Spinner de carga */
-.spinner-avatar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: white;
-}
-
-.spinner-ring {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 8px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Estado online */
-.avatar-estado-online {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  background: #10b981;
-  border: 3px solid white;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* Overlay de upload */
-.avatar-upload-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  border-radius: 50%;
-  font-size: 24px;
-}
-
-.avatar-paciente:hover .avatar-upload-overlay {
-  opacity: 1;
-}
-
-.avatar-paciente.uploading .avatar-upload-overlay {
-  opacity: 0;
-}
-
-/* Input file oculto */
-.avatar-file-input {
+.hidden {
   display: none !important;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .avatar-paciente {
-    width: 100px;
-    height: 100px;
+.loading {
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .historial-container {
+    background: white;
+    box-shadow: none;
+    padding: 20px;
   }
   
-  .avatar-iniciales {
-    font-size: 28px;
+  .header-paciente-minimalista {
+    box-shadow: none;
+    border: 1px solid #000;
   }
   
-  .spinner-ring {
-    width: 30px;
-    height: 30px;
+  .navegacion-principal,
+  .btn-accion,
+  .btn-primario,
+  .btn-secundario,
+  .modal-overlay {
+    display: none !important;
   }
   
-  .avatar-estado-online {
-    width: 20px;
-    height: 20px;
-    bottom: 6px;
-    right: 6px;
+  .contenido-principal {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .estudio-card,
+  .seccion-historial {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
   }
 }
 
-/* ===== HEADER EXPANDIDO DEL PACIENTE ===== */
+/* Agregar estos estilos al archivo HistorialPacienteIndividual.css */
 
-/* Grid expandido para más información */
-.detalles-paciente-grid-expandido {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-
-/* Elementos del detalle mejorados */
-.detalle-item-minimalista {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  background: rgba(6, 214, 160, 0.08);
-  border: 1px solid rgba(6, 214, 160, 0.2);
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  min-height: 60px;
-}
-
-.detalle-item-minimalista:hover {
-  background: rgba(6, 214, 160, 0.12);
-  border-color: rgba(6, 214, 160, 0.3);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(6, 214, 160, 0.15);
-}
-
-.detalle-icono {
-  font-size: 18px;
-  flex-shrink: 0;
-  margin-top: 2px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
-}
-
-.detalle-contenido {
+/* ===== SECCIÓN DIAGNÓSTICO Y TRATAMIENTO EDITABLE ===== */
+.diagnostico-tratamiento-editable {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0; /* Para permitir text-overflow */
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 2px solid rgba(6, 214, 160, 0.2);
 }
 
-.detalle-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #1E3A8A;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  opacity: 0.8;
-  line-height: 1.2;
-}
-
-.detalle-valor {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E3A8A;
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-/* Animaciones para los elementos */
-.detalle-item-minimalista {
-  animation: slideInUp 0.4s ease-out;
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Estilos especiales para diferentes tipos de datos */
-.detalle-item-minimalista:has(.detalle-label:contains("Email")) .detalle-valor {
-  color: #06D6A0;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.detalle-item-minimalista:has(.detalle-label:contains("Teléfono")) .detalle-valor {
-  color: #87CEEB;
-  font-family: 'Courier New', monospace;
-}
-
-.detalle-item-minimalista:has(.detalle-label:contains("ID")) .detalle-valor {
-  background: linear-gradient(135deg, #1E3A8A 0%, #06D6A0 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  font-weight: 800;
-}
-
-/* Ajustes para la información del paciente */
-.info-paciente-minimalista {
-  flex: 1;
-  min-width: 350px;
-  max-width: 100%;
-}
-
-/* ===== RESPONSIVE PARA HEADER EXPANDIDO ===== */
-
-/* Tablets grandes (1024px - 1200px) */
-@media (max-width: 1200px) {
-  .detalles-paciente-grid-expandido {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-  }
-  
-  .info-paciente-minimalista {
-    min-width: 320px;
-  }
-}
-
-/* Tablets medianas (768px - 1024px) */
-@media (max-width: 1024px) {
-  .header-minimalista-content {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 20px;
-  }
-  
-  .info-paciente-minimalista {
-    min-width: auto;
-    width: 100%;
-    max-width: 600px;
-  }
-  
-  .detalles-paciente-grid-expandido {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 8px;
-  }
-  
-  .detalle-item-minimalista {
-    padding: 10px 12px;
-    min-height: 55px;
-  }
-  
-  .detalle-icono {
-    font-size: 16px;
-  }
-  
-  .detalle-valor {
-    font-size: 13px;
-  }
-}
-
-/* Tablets pequeñas (600px - 768px) */
-@media (max-width: 768px) {
-  .detalles-paciente-grid-expandido {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  
-  .detalle-item-minimalista {
-    padding: 8px 10px;
-    min-height: 50px;
-  }
-  
-  .detalle-label {
-    font-size: 10px;
-  }
-  
-  .detalle-valor {
-    font-size: 12px;
-  }
-  
-  .detalle-icono {
-    font-size: 14px;
-  }
-}
-
-/* Móviles grandes (480px - 600px) */
-@media (max-width: 600px) {
-  .detalles-paciente-grid-expandido {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-  
-  .detalle-item-minimalista {
-    flex-direction: row;
-    align-items: center;
-    padding: 10px 12px;
-    min-height: 45px;
-  }
-  
-  .detalle-contenido {
-    gap: 1px;
-  }
-  
-  .nombre-paciente-principal {
-    font-size: 22px;
-    margin-bottom: 12px;
-  }
-}
-
-/* Móviles pequeños (hasta 480px) */
-@media (max-width: 480px) {
-  .header-minimalista-content {
-    gap: 16px;
-  }
-  
-  .detalle-item-minimalista {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-  
-  .detalle-icono {
-    font-size: 12px;
-  }
-  
-  .detalle-label {
-    font-size: 9px;
-    letter-spacing: 0.5px;
-  }
-  
-  .detalle-valor {
-    font-size: 11px;
-  }
-  
-  .nombre-paciente-principal {
-    font-size: 18px;
-    line-height: 1.3;
-  }
-}
-
-/* ===== MEJORAS ADICIONALES ===== */
-
-/* Efectos hover mejorados */
-.detalle-item-minimalista:hover .detalle-icono {
-  transform: scale(1.1);
-  transition: transform 0.2s ease;
-}
-
-.detalle-item-minimalista:hover .detalle-valor {
-  color: #06D6A0;
-  transition: color 0.2s ease;
-}
-
-/* Iconos animados */
-.detalle-icono {
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.detalle-icono::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #06D6A0, #87CEEB);
-  border-radius: 50%;
-  opacity: 0;
-  z-index: -1;
-  transition: opacity 0.3s ease;
-}
-
-.detalle-item-minimalista:hover .detalle-icono::after {
-  opacity: 0.2;
-}
-
-/* Estados especiales para datos faltantes */
-.detalle-valor:contains("No proporcionado"),
-.detalle-valor:contains("No especificado"),
-.detalle-valor:contains("No asignada") {
-  color: #87CEEB;
-  font-style: italic;
-  opacity: 0.7;
-}
-
-/* Animación de entrada escalonada */
-.detalle-item-minimalista:nth-child(1) { animation-delay: 0.1s; }
-.detalle-item-minimalista:nth-child(2) { animation-delay: 0.2s; }
-.detalle-item-minimalista:nth-child(3) { animation-delay: 0.3s; }
-.detalle-item-minimalista:nth-child(4) { animation-delay: 0.4s; }
-.detalle-item-minimalista:nth-child(5) { animation-delay: 0.5s; }
-.detalle-item-minimalista:nth-child(6) { animation-delay: 0.6s; }
-.detalle-item-minimalista:nth-child(7) { animation-delay: 0.7s; }
-.detalle-item-minimalista:nth-child(8) { animation-delay: 0.8s; }
-.detalle-item-minimalista:nth-child(9) { animation-delay: 0.9s; }
-
-/* Mejoras para accesibilidad */
-.detalle-item-minimalista:focus-within {
-  outline: 2px solid rgba(6, 214, 160, 0.5);
-  outline-offset: 2px;
-}
-
-/* Efectos para datos clickeables */
-.detalle-item-minimalista[data-clickable="true"] {
-  cursor: pointer;
-}
-
-.detalle-item-minimalista[data-clickable="true"]:hover {
-  background: rgba(6, 214, 160, 0.15);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(6, 214, 160, 0.2);
-}
-
-/* Indicadores visuales para diferentes tipos de datos */
-.detalle-item-minimalista[data-type="contact"] {
-  border-left: 3px solid #06D6A0;
-}
-
-.detalle-item-minimalista[data-type="personal"] {
-  border-left: 3px solid #87CEEB;
-}
-
-.detalle-item-minimalista[data-type="identification"] {
-  border-left: 3px solid #1E3A8A;
-}
-
-/* Estilos adicionales para los botones de acción en CitasDelDia */
-/* Agregar al final de tu archivo PanelPrincipal.css o ModalSystem.css */
-
-/* Botones de acción para citas */
-.btn-iniciar-consulta {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-.btn-iniciar-consulta:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-}
-
-.btn-ir-historial {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-  margin-right: 8px;
-}
-
-.btn-ir-historial:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.btn-completar-consulta {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-.btn-completar-consulta:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-}
-
-.btn-ver-historial {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.85rem;
-  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-}
-
-.btn-ver-historial:hover {
-  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
-}
-
-/* Contenedor de estado mejorado */
-.modal-estado-container {
+.campo-diagnostico,
+.campo-tratamiento {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: stretch;
-  min-width: 120px;
 }
 
-.modal-estado-select-small {
-  font-size: 11px;
-  padding: 4px 6px;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-}
-
-/* Badges de estado mejorados */
-.modal-badge-en-proceso {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-  animation: pulse 2s infinite;
-}
-
-.modal-badge-completada {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.modal-badge-programada {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.modal-badge-confirmada {
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.modal-badge-cancelada {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.modal-badge-no-asistio {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-/* Animación para estados activos */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-/* Layout mejorado para las citas */
-.modal-cita-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
-}
-
-.modal-cita-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-}
-
-/* Responsividad para móviles */
-@media (max-width: 768px) {
-  .modal-estado-container {
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .btn-iniciar-consulta,
-  .btn-ir-historial,
-  .btn-completar-consulta,
-  .btn-ver-historial {
-    padding: 10px 12px;
-    font-size: 0.8rem;
-    width: 100%;
-    text-align: center;
-  }
-  
-  .btn-ir-historial {
-    margin-right: 0;
-    margin-bottom: 4px;
-  }
-  
-  .modal-cita-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .modal-cita-hora-tipo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-}
-
-/* Estados de loading */
-.btn-iniciar-consulta:disabled,
-.btn-ir-historial:disabled,
-.btn-completar-consulta:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* Efectos especiales para botón de historial */
-.btn-ir-historial {
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-ir-historial::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.btn-ir-historial:hover::before {
-  left: 100%;
-}
-
-/* Indicador visual para consultas en proceso */
-.modal-cita-card[data-estado="En_Proceso"] {
-  border-left: 4px solid #3b82f6;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-}
-
-.modal-cita-card[data-estado="En_Proceso"] .modal-hora-grande {
-  color: #2563eb;
+.campo-diagnostico label,
+.campo-tratamiento label {
+  font-size: 14px;
   font-weight: 700;
-}
-
-/* Indicador para consultas completadas */
-.modal-cita-card[data-estado="Completada"] {
-  border-left: 4px solid #10b981;
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-}
-
-/* Estilos especiales para el modal de confirmación de consulta */
-.consulta-modal .consulta-modal-icon {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  border: 3px solid #3b82f6;
-  animation: bounce 1s ease-out;
-}
-
-@keyframes bounce {
-  0%, 20%, 53%, 80%, 100% {
-    transform: translate3d(0,0,0);
-  }
-  40%, 43% {
-    transform: translate3d(0, -8px, 0);
-  }
-  70% {
-    transform: translate3d(0, -4px, 0);
-  }
-  90% {
-    transform: translate3d(0, -2px, 0);
-  }
-}
-
-/* Estilos para motivo de consulta mejorado */
-.sintomas-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
-  margin: 15px 0;
-}
-
-.campo-inline {
-  display: flex;
-  flex-direction: column;
-  padding: 12px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 8px;
-  border-left: 4px solid #007bff;
-  transition: all 0.3s ease;
-}
-
-.campo-inline:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
-}
-
-.campo-inline strong {
-  font-size: 11px;
-  color: #6c757d;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-.campo-inline span {
-  font-weight: 500;
-  color: #495057;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.lista-sintomas {
-  list-style: none;
-  padding: 0;
-  margin: 8px 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.lista-sintomas li {
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-radius: 20px;
-  font-size: 13px;
-  color: #1565c0;
-  border: 1px solid #90caf9;
-  transition: all 0.2s ease;
-}
-
-.urgencia-alta {
-  color: #dc3545;
-  font-weight: bold;
-  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
-  padding: 4px 8px;
-  border-radius: 12px;
-  border: 1px solid #ef9a9a;
-}
-
-.urgencia-media {
-  color: #fd7e14;
-  font-weight: bold;
-  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-  padding: 4px 8px;
-  border-radius: 12px;
-  border: 1px solid #ffcc02;
-}
-
-.urgencia-baja {
-  color: #28a745;
-  font-weight: bold;
-  background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-  padding: 4px 8px;
-  border-radius: 12px;
-  border: 1px solid #81c784;
-}
-
-/* ===== ESTILOS PARA PLAN DE TRATAMIENTO ESTRUCTURADO ===== */
-
-.plan-estructurado {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 15px;
-}
-
-.plan-seccion {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 18px;
-  margin-bottom: 20px;
-  border-left: 4px solid #007bff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.plan-seccion:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
-}
-
-.plan-seccion h4 {
-  color: #495057;
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e9ecef;
-}
-
-.plan-seccion p {
-  color: #6c757d;
-  font-size: 14px;
-  line-height: 1.6;
-  margin: 8px 0;
-}
-
-/* Listas del plan */
-.lista-recomendaciones,
-.lista-plan {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0;
-}
-
-.lista-recomendaciones li,
-.lista-plan li {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  padding: 12px 16px;
-  margin: 8px 0;
-  border-radius: 8px;
-  border-left: 4px solid #2196f3;
-  color: #1565c0;
-  font-size: 14px;
-  line-height: 1.5;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.lista-recomendaciones li:hover,
-.lista-plan li:hover {
-  background: linear-gradient(135deg, #bbdefb 0%, #90caf9 100%);
-  transform: translateX(5px);
-  box-shadow: 0 3px 10px rgba(33, 150, 243, 0.2);
-}
-
-.lista-recomendaciones li::before,
-.lista-plan li::before {
-  content: "✓";
-  position: absolute;
-  left: -15px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: #2196f3;
-  color: white;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  color: #1E3A8A;
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: bold;
+  gap: 8px;
 }
 
-/* Grid para medicamentos */
-.medicamentos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 15px;
-  margin: 15px 0;
+.campo-diagnostico label::before {
+  content: "🔍";
+  font-size: 16px;
 }
 
-.medicamento-item {
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  padding: 16px;
-  border-radius: 10px;
-  border-left: 4px solid #ff9800;
+.campo-tratamiento label::before {
+  content: "💊";
+  font-size: 16px;
+}
+
+.input-diagnostico,
+.input-tratamiento {
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  color: #1E3A8A;
   transition: all 0.3s ease;
+  resize: vertical;
+  min-height: 60px;
 }
 
-.medicamento-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.2);
+.input-diagnostico:focus,
+.input-tratamiento:focus {
+  outline: none;
+  border-color: #06D6A0;
+  box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.1);
+  background: #ffffff;
 }
 
-.medicamento-item strong {
-  display: block;
-  color: #e65100;
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.medicamento-item span {
-  display: block;
-  color: #f57c00;
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
-.medicamento-item em {
-  display: block;
-  color: #ff8f00;
-  font-size: 12px;
+.input-diagnostico::placeholder,
+.input-tratamiento::placeholder {
+  color: #87CEEB;
   font-style: italic;
-  opacity: 0.9;
 }
 
-/* Colores específicos por sección */
-.plan-seccion:nth-child(1) {
-  border-left-color: #dc3545; /* Inmediato - Rojo */
+.acciones-diagnostico {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
 }
 
-.plan-seccion:nth-child(1) h4 {
-  color: #dc3545;
+.btn-guardar-diagnostico {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(6, 214, 160, 0.2);
 }
 
-.plan-seccion:nth-child(2) {
-  border-left-color: #fd7e14; /* Seguimiento - Naranja */
+.btn-guardar-diagnostico:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(6, 214, 160, 0.3);
 }
 
-.plan-seccion:nth-child(2) h4 {
-  color: #fd7e14;
+.btn-guardar-diagnostico:active {
+  transform: translateY(0);
 }
 
-.plan-seccion:nth-child(3) {
-  border-left-color: #28a745; /* Recomendaciones - Verde */
+/* Estados de validación */
+.input-diagnostico.error,
+.input-tratamiento.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
-.plan-seccion:nth-child(3) h4 {
-  color: #28a745;
-}
-
-.plan-seccion:nth-child(4) {
-  border-left-color: #ffc107; /* Corto plazo - Amarillo */
-}
-
-.plan-seccion:nth-child(4) h4 {
-  color: #856404;
-}
-
-.plan-seccion:nth-child(5) {
-  border-left-color: #17a2b8; /* Mediano plazo - Cian */
-}
-
-.plan-seccion:nth-child(5) h4 {
-  color: #17a2b8;
-}
-
-.plan-seccion:nth-child(6) {
-  border-left-color: #6f42c1; /* Largo plazo - Púrpura */
-}
-
-.plan-seccion:nth-child(6) h4 {
-  color: #6f42c1;
+.input-diagnostico.success,
+.input-tratamiento.success {
+  border-color: #06D6A0;
+  box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.1);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .plan-estructurado {
-    padding: 15px;
+  .diagnostico-tratamiento-editable {
+    padding: 16px;
+    gap: 16px;
   }
   
-  .plan-seccion {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
-  
-  .medicamentos-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  
-  .lista-recomendaciones li,
-  .lista-plan li {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
-  
-  .lista-recomendaciones li::before,
-  .lista-plan li::before {
-    left: -12px;
-    width: 18px;
-    height: 18px;
-    font-size: 11px;
+  .btn-guardar-diagnostico {
+    width: 100%;
+    justify-content: center;
   }
 }
 
-/* Animaciones */
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.tab-boton-pdf {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  font-weight: bold;
+  color: #007bff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.plan-seccion {
-  animation: slideInFromLeft 0.5s ease-out;
+.tab-boton-pdf:hover {
+  text-decoration: underline;
 }
 
-.plan-seccion:nth-child(even) {
-  animation-delay: 0.1s;
-}
 
-.plan-seccion:nth-child(odd) {
-  animation-delay: 0.2s;
-}
+/* ===== FINAL DEL ARCHIVO CSS ===== */

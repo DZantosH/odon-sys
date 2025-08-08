@@ -7,7 +7,8 @@ const fs = require('fs').promises;
 // Configuración de multer para subida de archivos
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/estudios-laboratorio');
+    // ✅ CAMBIAR DE 'estudios-laboratorio' A 'estudios'
+    const uploadPath = path.join(__dirname, '../uploads/estudios');
     try {
       await fs.mkdir(uploadPath, { recursive: true });
       cb(null, uploadPath);
@@ -189,8 +190,7 @@ router.post('/:estudioId/resultado', upload.single('archivo'), async (req, res) 
     }
     
     // Construir URL del archivo
-    const archivoUrl = `/uploads/estudios-laboratorio/${req.file.filename}`;
-    
+const archivoUrl = `/uploads/estudios/${req.file.filename}`;    
     // Actualizar estudio con el resultado
     const updateQuery = `
       UPDATE estudios_laboratorio 

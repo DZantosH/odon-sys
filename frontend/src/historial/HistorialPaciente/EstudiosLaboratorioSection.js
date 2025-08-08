@@ -195,8 +195,54 @@ const TarjetaEstudioCompacta = ({
   formatearFecha, 
   buildApiUrl, 
   onVerDetalles, 
-  onSubirResultado 
+  onSubirResultado,
+  getAuthHeaders  // ✅ AGREGADO: Recibir getAuthHeaders
 }) => {
+  // ✅ AGREGADO: Función para abrir archivos protegidos
+  const abrirArchivoProtegido = async (archivoUrl) => {
+    try {
+      console.log('🔒 Abriendo archivo protegido:', archivoUrl);
+      
+      // Construir URL de la API protegida
+      const apiUrl = buildApiUrl(archivoUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: getAuthHeaders ? {
+          'Authorization': getAuthHeaders().Authorization
+        } : {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      // Obtener el blob del archivo
+      const blob = await response.blob();
+      
+      // Crear URL temporal para el blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Abrir en nueva ventana
+      const newWindow = window.open(blobUrl, '_blank');
+      
+      // Limpiar el blob URL después de un tiempo para liberar memoria
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+      }, 10000); // 10 segundos
+      
+      if (!newWindow) {
+        alert('⚠️ Por favor permite ventanas emergentes para ver el archivo');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error abriendo archivo:', error);
+      alert(`❌ Error al abrir archivo: ${error.message}`);
+    }
+  };
+
   const getEstadoColor = (estado) => {
     switch (estado?.toLowerCase()) {
       case 'completado':
@@ -267,15 +313,14 @@ const TarjetaEstudioCompacta = ({
           🔍 Detalles
         </button>
         
+        {/* ✅ CAMBIADO: De enlace directo a botón con función protegida */}
         {estudio.archivo_resultado ? (
-          <a 
-            href={buildApiUrl(estudio.archivo_resultado)} 
-            target="_blank" 
-            rel="noopener noreferrer"
+          <button
+            onClick={() => abrirArchivoProtegido(estudio.archivo_resultado)}
             className="btn-compacto btn-resultado-compacto"
           >
             📄 Ver Resultado
-          </a>
+          </button>
         ) : (
           <button
             onClick={() => onSubirResultado(estudio)}
@@ -302,7 +347,7 @@ const EstudiosLaboratorioSection = ({
   // Estados principales
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [conteoEstudiosInicial, setConteoEstudiosInicial] = useState(0); // ✅ NUEVO: Para rastrear cambios
+  const [conteoEstudiosInicial, setConteoEstudiosInicial] = useState(0);
   
   // Estados para modales del sistema unificado
   const [modalVerEstudioOpen, setModalVerEstudioOpen] = useState(false);
@@ -333,18 +378,14 @@ const EstudiosLaboratorioSection = ({
     }));
   }, []);
 
-  // ✅ NUEVO: useEffect para detectar cuando se agrega un nuevo estudio
   useEffect(() => {
-    // Si estamos enviando un formulario y detectamos que aumentó el número de estudios
     if (submitLoading && estudiosLaboratorio.length > conteoEstudiosInicial) {
       console.log('🎉 ¡Nuevo estudio detectado! Cerrando formulario automáticamente');
       console.log(`📊 Estudios: ${conteoEstudiosInicial} → ${estudiosLaboratorio.length}`);
       
-      // Cerrar formulario automáticamente
       setMostrarFormulario(false);
       setSubmitLoading(false);
       
-      // Resetear formulario
       setFormNuevoEstudio({
         tipo_estudio: '',
         descripcion: '',
@@ -355,12 +396,10 @@ const EstudiosLaboratorioSection = ({
         preparacion_especial: ''
       });
       
-      // Mostrar notificación de éxito
       setSuccessTitle('¡Estudio Agregado Exitosamente!');
       setSuccessMessage(`Nuevo estudio agregado al historial del paciente.`);
       setShowSuccessNotification(true);
       
-      // Resetear contador
       setConteoEstudiosInicial(0);
     }
   }, [estudiosLaboratorio.length, submitLoading, conteoEstudiosInicial, formNuevoEstudio.tipo_estudio]);
@@ -370,7 +409,6 @@ const EstudiosLaboratorioSection = ({
       console.log('🚀 Iniciando solicitud de estudio inline...');
       console.log('📋 Form data:', formNuevoEstudio);
       
-      // Guardar el conteo actual ANTES de enviar
       setConteoEstudiosInicial(estudiosLaboratorio.length);
       console.log('📊 Conteo inicial de estudios:', estudiosLaboratorio.length);
       
@@ -384,10 +422,8 @@ const EstudiosLaboratorioSection = ({
 
       console.log('✅ Validación pasada, llamando a onSolicitarNuevo...');
       
-      // Llamar a la función del padre (sin await para no bloquear)
       onSolicitarNuevo(formNuevoEstudio).then(() => {
         console.log('📡 onSolicitarNuevo completado');
-        // El useEffect se encargará de cerrar el formulario cuando detecte el nuevo estudio
       }).catch((error) => {
         console.error('❌ Error en onSolicitarNuevo:', error);
         setSubmitLoading(false);
@@ -403,7 +439,6 @@ const EstudiosLaboratorioSection = ({
 
   const handleCancelarFormulario = () => {
     setMostrarFormulario(false);
-    // Resetear formulario
     setFormNuevoEstudio({
       tipo_estudio: '',
       descripcion: '',
@@ -446,7 +481,6 @@ const EstudiosLaboratorioSection = ({
       
       setModalSubirResultadoOpen(false);
       
-      // Mostrar notificación de éxito
       setSuccessTitle('¡Resultado Subido Exitosamente!');
       setSuccessMessage(`El archivo "${archivo.name}" se ha subido correctamente para el estudio "${estudio.tipo_estudio}".`);
       setShowSuccessNotification(true);
@@ -473,7 +507,6 @@ const EstudiosLaboratorioSection = ({
     setModalVerEstudioOpen(true);
   };
 
-  // Render del estado de carga
   if (loadingEstudios) {
     return (
       <div className="loading-section-estudios">
@@ -483,11 +516,9 @@ const EstudiosLaboratorioSection = ({
     );
   }
 
-  // ===== RENDER PRINCIPAL =====
   return (
     <div className="seccion-completa-estudios">
       
-      {/* HEADER */}
       <div className="seccion-header-estudios">
         <h2>🔬 Estudios de Laboratorio ({estudiosLaboratorio.length})</h2>
         <div className="header-actions-estudios">
@@ -510,7 +541,6 @@ const EstudiosLaboratorioSection = ({
         </div>
       </div>
 
-      {/* FORMULARIO INLINE */}
       {mostrarFormulario && (
         <FormularioInlineEstudio
           formData={formNuevoEstudio}
@@ -522,9 +552,7 @@ const EstudiosLaboratorioSection = ({
         />
       )}
 
-      {/* CONTENIDO PRINCIPAL */}
       {estudiosLaboratorio.length === 0 && !mostrarFormulario ? (
-        // Estado vacío
         <div className="seccion-vacia-estudios">
           <div className="icono-vacio-estudios">🔬</div>
           <h3>Sin Estudios de Laboratorio</h3>
@@ -538,9 +566,9 @@ const EstudiosLaboratorioSection = ({
           </button>
         </div>
       ) : (
-        // Grid de tarjetas compactas
         !mostrarFormulario && (
           <div className="estudios-grid-compacto">
+            {/* ✅ CAMBIADO: Agregar getAuthHeaders */}
             {estudiosLaboratorio.map((estudio) => (
               <TarjetaEstudioCompacta
                 key={estudio.id}
@@ -549,13 +577,13 @@ const EstudiosLaboratorioSection = ({
                 buildApiUrl={buildApiUrl}
                 onVerDetalles={abrirModalVerEstudio}
                 onSubirResultado={abrirModalSubirResultado}
+                getAuthHeaders={getAuthHeaders}
               />
             ))}
           </div>
         )
       )}
 
-      {/* MODALES DEL SISTEMA UNIFICADO */}
       <EstudioDetallesModal
         isOpen={modalVerEstudioOpen}
         onClose={() => setModalVerEstudioOpen(false)}
@@ -572,7 +600,6 @@ const EstudiosLaboratorioSection = ({
         onSubirResultado={handleSubirResultado}
       />
 
-      {/* NOTIFICACIONES DE ÉXITO */}
       <SuccessNotificationModal
         isOpen={showSuccessNotification}
         onClose={() => setShowSuccessNotification(false)}

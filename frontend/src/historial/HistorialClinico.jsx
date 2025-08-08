@@ -10,6 +10,8 @@ import AntecedentesPersonalesNoPatologicos from './secciones/AntecedentesPersona
 import AntecedentesPersonalesPatologicos from './secciones/AntecedentesPersonalesPatologicos';
 import ExamenBucal from './secciones/ExamenBucal';
 import ExamenIntrabucal from './secciones/ExamenIntrabucal';
+import SeccionesOclusion from './secciones/SeccionesOclusion'; 
+
 
 // Importar validaciones
 import { validarSeccion } from './validaciones';
@@ -74,8 +76,20 @@ const HistorialClinico = () => {
   { id: 4, titulo: 'Ant. Pers. No Patológicos' },
   { id: 5, titulo: 'Ant. Pers. Patológicos' },
   { id: 6, titulo: 'Examen Extrabucal' },
-  { id: 7, titulo: 'Examen Intrabucal' }
+  { id: 7, titulo: 'Examen Intrabucal' },
+  { id: 8, titulo: 'Oclusión' }
 ];
+
+const extractOclusionData = () => ({
+  odontograma: datosFormulario.odontograma || {},
+  armonia_maxilares: datosFormulario.armonia_maxilares || {},
+  simetria_arco: datosFormulario.simetria_arco || {},
+  clasificacion_angle: datosFormulario.clasificacion_angle || {},
+  examen_higiene_oral: datosFormulario.examen_higiene_oral || {},
+  encias_detallado: datosFormulario.encias_detallado || {},
+  examen_dental: datosFormulario.examen_dental || {},
+  periodontograma: datosFormulario.periodontograma || {}
+});
 
   // Effect para el scroll horizontal del carrusel
   useEffect(() => {
@@ -282,19 +296,20 @@ const HistorialClinico = () => {
           dispositivo: navigator.userAgent,
           navegador: navigator.appName
         },
-        datos: {
-          informacionPersonal: extractFichaData(),
-          secciones: {
-            fichaIdentificacion: extractFichaData(),
-            motivoConsulta: extractMotivoData(),
-            antecedentesHeredoFamiliares: extractAntecedentesHF(),
-            antecedentesPersonalesNoPatologicos: extractAntecedentesNoPatol(),
-            antecedentesPersonalesPatologicos: extractAntecedentesPatol(),
-            examenExtrabucal: extractExamenExt(),
-            examenIntrabucal: extractExamenInt()
-          }
-        }
-      };
+       datos: {
+  informacionPersonal: extractFichaData(),
+  secciones: {
+    fichaIdentificacion: extractFichaData(),
+    motivoConsulta: extractMotivoData(),
+    antecedentesHeredoFamiliares: extractAntecedentesHF(),
+    antecedentesPersonalesNoPatologicos: extractAntecedentesNoPatol(),
+    antecedentesPersonalesPatologicos: extractAntecedentesPatol(),
+    examenExtrabucal: extractExamenExt(),
+    examenIntrabucal: extractExamenInt(),
+    oclusion: extractOclusionData()  // ← ESTA LÍNEA ESTÁ BIEN
+  }
+}
+};
 
       console.log('📋 Historial completo preparado:', historialCompleto);
 
@@ -507,23 +522,24 @@ const HistorialClinico = () => {
   };
 
   const renderSeccionActual = () => {
-    const seccionProps = { 
-      datos: datosFormulario, 
-      errores, 
-      onChange: handleInputChange 
-    };
-
-    switch (seccionActiva) {
-      case 1: return <FichaIdentificacion {...seccionProps} />;
-      case 2: return <MotivoConsulta {...seccionProps} />;
-      case 3: return <AntecedentesHeredoFamiliares {...seccionProps} />;
-      case 4: return <AntecedentesPersonalesNoPatologicos {...seccionProps} />;
-      case 5: return <AntecedentesPersonalesPatologicos {...seccionProps} />;
-      case 6: return <ExamenBucal {...seccionProps} />;
-      case 7: return <ExamenIntrabucal {...seccionProps} />;
-      default: return <FichaIdentificacion {...seccionProps} />;
-    }
+  const seccionProps = { 
+    datos: datosFormulario, 
+    errores, 
+    onChange: handleInputChange 
   };
+
+  switch (seccionActiva) {
+    case 1: return <FichaIdentificacion {...seccionProps} />;
+    case 2: return <MotivoConsulta {...seccionProps} />;
+    case 3: return <AntecedentesHeredoFamiliares {...seccionProps} />;
+    case 4: return <AntecedentesPersonalesNoPatologicos {...seccionProps} />;
+    case 5: return <AntecedentesPersonalesPatologicos {...seccionProps} />;
+    case 6: return <ExamenBucal {...seccionProps} />;
+    case 7: return <ExamenIntrabucal {...seccionProps} />;
+    case 8: return <SeccionesOclusion {...seccionProps} />;  // ← NUEVO CASE
+    default: return <FichaIdentificacion {...seccionProps} />;
+  }
+};
 
   return (
     <div className="historial-clinico-container">

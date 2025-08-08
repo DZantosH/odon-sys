@@ -1,4 +1,4 @@
-// backend/routes/radiografias.js - VERSIÓN CORREGIDA para mysql2/promise
+// backend/routes/radiografias.js - VERSIÓN ACTUALIZADA con categorías
 const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database'); // Importar el pool correctamente
@@ -53,6 +53,7 @@ router.get('/paciente/:id', async (req, res) => {
       LEFT JOIN usuarios u ON r.doctor_id = u.id
       WHERE r.paciente_id = ? AND r.activo = 1
       ORDER BY 
+        r.categoria ASC,
         CASE 
           WHEN r.fecha_solicitud IS NOT NULL THEN r.fecha_solicitud
           WHEN r.created_at IS NOT NULL THEN DATE(r.created_at)
@@ -63,6 +64,7 @@ router.get('/paciente/:id', async (req, res) => {
     const [results] = await pool.execute(query, [pacienteId]);
     
     console.log('✅ Radiografías encontradas:', results.length);
+    console.log('📊 Categorías encontradas:', [...new Set(results.map(r => r.categoria))]);
     res.json(results);
 
   } catch (error) {
@@ -82,6 +84,7 @@ router.post('/', async (req, res) => {
     const {
       paciente_id,
       doctor_id,
+      categoria, // ✅ NUEVO CAMPO
       tipo_radiografia,
       zona_anatomica,
       urgencia = 'normal',
@@ -92,7 +95,7 @@ router.post('/', async (req, res) => {
       fecha_solicitud
     } = req.body;
 
-    // Validaciones
+    // ✅ VALIDACIONES ACTUALIZADAS
     if (!paciente_id || !doctor_id || !tipo_radiografia) {
       return res.status(400).json({
         error: 'Datos incompletos',
@@ -100,10 +103,28 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // ✅ VALIDAR CATEGORÍA SI SE PROPORCIONA
+    if (categoria && !['intraorales', 'extraorales'].includes(categoria)) {
+      return res.status(400).json({
+        error: 'Categoría inválida',
+        message: 'La categoría debe ser "intraorales" o "extraorales"'
+      });
+    }
+
+    console.log('📋 Datos a insertar:', {
+      paciente_id,
+      doctor_id,
+      categoria,
+      tipo_radiografia,
+      zona_anatomica,
+      urgencia
+    });
+
     const query = `
       INSERT INTO radiografias (
         paciente_id,
         doctor_id,
+        categoria,
         tipo_radiografia,
         zona_anatomica,
         urgencia,
@@ -116,12 +137,13 @@ router.post('/', async (req, res) => {
         activo,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 1, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', 1, NOW(), NOW())
     `;
 
     const [result] = await pool.execute(query, [
       paciente_id,
       doctor_id,
+      categoria, // ✅ INCLUIR CATEGORÍA
       tipo_radiografia,
       zona_anatomica,
       urgencia,
@@ -137,6 +159,7 @@ router.post('/', async (req, res) => {
     const [selectResults] = await pool.execute(selectQuery, [result.insertId]);
 
     console.log('✅ Radiografía creada exitosamente:', result.insertId);
+    console.log('📊 Con categoría:', selectResults[0].categoria);
     res.status(201).json(selectResults[0]);
 
   } catch (error) {
@@ -173,10 +196,12 @@ router.post('/:id/imagen', upload.fields([
 
     const archivoPath = `/uploads/radiografias/${file.filename}`;
     const fechaRealizacion = req.body.fecha_realizacion || new Date().toISOString().split('T')[0];
+    const comentariosArchivo = req.body.comentarios_archivo || null; // ✅ NUEVO: Comentarios
 
     console.log('💾 Guardando en BD:', {
       archivo: archivoPath,
       fecha: fechaRealizacion,
+      comentarios: comentariosArchivo, // ✅ NUEVO
       radiografia_id: radiografiaId
     });
 
@@ -185,12 +210,13 @@ router.post('/:id/imagen', upload.fields([
       SET 
         archivo_imagen = ?,
         fecha_realizacion = ?,
+        comentarios_archivo = ?,
         estado = 'completada',
         updated_at = NOW()
       WHERE id = ? AND activo = 1
     `;
 
-    const [result] = await pool.execute(query, [archivoPath, fechaRealizacion, radiografiaId]);
+    const [result] = await pool.execute(query, [archivoPath, fechaRealizacion, comentariosArchivo, radiografiaId]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -205,11 +231,13 @@ router.post('/:id/imagen', upload.fields([
     const [selectResults] = await pool.execute(selectQuery, [radiografiaId]);
 
     console.log('✅ Imagen subida y BD actualizada exitosamente');
+    console.log('💬 Comentarios guardados:', comentariosArchivo);
     res.json({
       success: true,
       message: 'Imagen subida exitosamente',
       radiografia: selectResults[0],
       archivo: archivoPath,
+      comentarios: comentariosArchivo,
       archivo_url: `${req.protocol}://${req.get('host')}${archivoPath}`
     });
 
@@ -236,6 +264,7 @@ router.post('/:id/archivo', upload.fields([
     console.log('📤 [ARCHIVO] Intentando subir archivo para radiografía:', radiografiaId);
     console.log('📁 [ARCHIVO] Archivo recibido:', file ? file.filename : 'No hay archivo');
     console.log('📋 [ARCHIVO] Files object:', req.files);
+    console.log('📋 [ARCHIVO] Body recibido:', req.body);
     
     if (!file) {
       return res.status(400).json({
@@ -247,18 +276,27 @@ router.post('/:id/archivo', upload.fields([
 
     const archivoPath = `/uploads/radiografias/${file.filename}`;
     const fechaRealizacion = req.body.fecha_realizacion || new Date().toISOString().split('T')[0];
+    const comentariosArchivo = req.body.comentarios_archivo || null; // ✅ NUEVO: Comentarios
+
+    console.log('💾 [ARCHIVO] Guardando en BD:', {
+      archivo: archivoPath,
+      fecha: fechaRealizacion,
+      comentarios: comentariosArchivo, // ✅ NUEVO
+      radiografia_id: radiografiaId
+    });
 
     const query = `
       UPDATE radiografias 
       SET 
         archivo_imagen = ?,
         fecha_realizacion = ?,
+        comentarios_archivo = ?,
         estado = 'completada',
         updated_at = NOW()
       WHERE id = ? AND activo = 1
     `;
 
-    const [result] = await pool.execute(query, [archivoPath, fechaRealizacion, radiografiaId]);
+    const [result] = await pool.execute(query, [archivoPath, fechaRealizacion, comentariosArchivo, radiografiaId]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({
@@ -273,11 +311,13 @@ router.post('/:id/archivo', upload.fields([
     const [selectResults] = await pool.execute(selectQuery, [radiografiaId]);
 
     console.log('✅ [ARCHIVO] Archivo subido y BD actualizada exitosamente');
+    console.log('💬 [ARCHIVO] Comentarios guardados:', comentariosArchivo);
     res.json({
       success: true,
       message: 'Archivo subido exitosamente',
       radiografia: selectResults[0],
       archivo: archivoPath,
+      comentarios: comentariosArchivo,
       archivo_url: `${req.protocol}://${req.get('host')}${archivoPath}`
     });
 
@@ -316,6 +356,7 @@ router.get('/:id', async (req, res) => {
       });
     }
 
+    console.log('📊 Radiografía obtenida con categoría:', results[0].categoria);
     res.json(results[0]);
 
   } catch (error) {
@@ -335,11 +376,13 @@ router.put('/:id', async (req, res) => {
 
     console.log('🔄 Actualizando radiografía:', radiografiaId, updates);
 
-    // Construir query dinámico
+    // ✅ INCLUIR COMENTARIOS_ARCHIVO EN CAMPOS PERMITIDOS
     const allowedFields = [
+      'categoria', // ✅ NUEVO CAMPO
       'tipo_radiografia', 'zona_anatomica', 'urgencia', 'centro_radiologico',
       'motivo_estudio', 'hallazgos_clinicos', 'instrucciones_especiales',
-      'estado', 'fecha_programada', 'fecha_realizacion', 'observaciones'
+      'estado', 'fecha_programada', 'fecha_realizacion', 'observaciones',
+      'comentarios_archivo' // ✅ NUEVO: Permitir actualizar comentarios
     ];
 
     const updateFields = [];
@@ -347,6 +390,13 @@ router.put('/:id', async (req, res) => {
 
     Object.keys(updates).forEach(key => {
       if (allowedFields.includes(key)) {
+        // ✅ VALIDAR CATEGORÍA SI SE ESTÁ ACTUALIZANDO
+        if (key === 'categoria' && updates[key] && !['intraorales', 'extraorales'].includes(updates[key])) {
+          return res.status(400).json({
+            error: 'Categoría inválida',
+            message: 'La categoría debe ser "intraorales" o "extraorales"'
+          });
+        }
         updateFields.push(`${key} = ?`);
         values.push(updates[key]);
       }
@@ -376,6 +426,7 @@ router.put('/:id', async (req, res) => {
     const [selectResults] = await pool.execute(selectQuery, [radiografiaId]);
 
     console.log('✅ Radiografía actualizada exitosamente');
+    console.log('📊 Nueva categoría:', selectResults[0].categoria);
     res.json(selectResults[0]);
 
   } catch (error) {
@@ -412,6 +463,36 @@ router.delete('/:id', async (req, res) => {
     console.error('❌ Error al eliminar radiografía:', error);
     res.status(500).json({
       error: 'Error al eliminar radiografía',
+      message: error.message
+    });
+  }
+});
+
+// ✅ NUEVO ENDPOINT: GET /api/radiografias/categorias/estadisticas - Estadísticas por categoría
+router.get('/categorias/estadisticas', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        categoria,
+        COUNT(*) as total,
+        SUM(CASE WHEN estado = 'pendiente' THEN 1 ELSE 0 END) as pendientes,
+        SUM(CASE WHEN estado = 'completada' THEN 1 ELSE 0 END) as completadas,
+        SUM(CASE WHEN archivo_imagen IS NOT NULL THEN 1 ELSE 0 END) as con_archivo
+      FROM radiografias 
+      WHERE activo = 1 
+      GROUP BY categoria
+      ORDER BY categoria
+    `;
+
+    const [results] = await pool.execute(query);
+    
+    console.log('📊 Estadísticas por categoría obtenidas:', results);
+    res.json(results);
+
+  } catch (error) {
+    console.error('❌ Error al obtener estadísticas:', error);
+    res.status(500).json({
+      error: 'Error al obtener estadísticas',
       message: error.message
     });
   }

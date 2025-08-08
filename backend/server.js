@@ -4,6 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const { pool, testConnection } = require('./config/database');
 require('dotenv').config();
+const { verifyToken } = require('./middleware/auth');
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +35,209 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', (req, res, next) => {
   next();
 });
+
+// ===== ENDPOINT PROTEGIDO PARA ARCHIVOS DE ESTUDIOS =====
+app.get('/api/uploads/estudios/:filename', verifyToken, (req, res) => {
+  try {
+    const { filename } = req.params;
+
+     // ✅ AGREGAR HEADERS CORS EXPLÍCITAMENTE
+    res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+      ? [process.env.FRONTEND_URL || 'http://98.82.131.153'] 
+      : 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    console.log('🔒 Acceso protegido a archivo de estudio:', filename);
+    console.log('👤 Usuario autenticado:', req.user.email);
+    
+     // Validar formato del filename por seguridad
+    if (!/^estudio-\d+-\d+\.(pdf|jpg|jpeg|png)$/.test(filename)) {
+      console.log('❌ Formato de archivo inválido:', filename);
+      return res.status(400).json({
+        success: false,
+        error: 'Formato de archivo no válido'
+      });
+    }
+    
+    const filePath = path.join(__dirname, 'uploads', 'estudios', filename);
+    console.log('📂 Ruta del archivo:', filePath);
+    
+   // Verificar que el archivo existe
+    if (!fs.existsSync(filePath)) {
+      console.log('❌ Archivo no encontrado:', filePath);
+      
+      // Listar archivos disponibles para debugging
+      const dirPath = path.join(__dirname, 'uploads', 'estudios');
+      try {
+        const files = fs.readdirSync(dirPath);
+        console.log('📋 Archivos disponibles:', files.slice(0, 10));
+      } catch (err) {
+        console.log('📋 No se pudo leer directorio de estudios:', err.message);
+      }
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Archivo no encontrado',
+        filename,
+        path: filePath
+      });
+    }
+
+    // Establecer headers apropiados según el tipo de archivo
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png'
+    };
+
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+    
+    // Headers de seguridad y cache
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'private, max-age=3600'); // Cache privado por 1 hora
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    console.log('✅ Sirviendo archivo protegido:', {
+      filename,
+      mimeType,
+      size: fs.statSync(filePath).size,
+      usuario: req.user.email
+    });
+    
+    // Enviar el archivo
+    res.sendFile(filePath);
+    
+  } catch (error) {
+    console.error('❌ Error sirviendo archivo protegido:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      message: error.message
+    });
+  }
+});
+
+app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads/avatars')));
+app.use('/uploads/radiografias', express.static(path.join(__dirname, 'uploads/radiografias')));
+
+// ✅ AGREGAR HANDLER PARA OPTIONS (preflight)
+app.options('/api/uploads/estudios/:filename', (req, res) => {
+  res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL || 'http://98.82.131.153'] 
+    : 'http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
+// En server.js, agregar DESPUÉS del endpoint de estudios:
+
+// ===== ENDPOINT PROTEGIDO PARA ARCHIVOS DE RADIOGRAFÍAS =====
+app.get('/api/uploads/radiografias/:filename', verifyToken, (req, res) => {
+  try {
+    const { filename } = req.params;
+    
+    // Headers CORS
+    res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+      ? [process.env.FRONTEND_URL || 'http://98.82.131.153'] 
+      : 'http://localhost:3000');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
+    console.log('🔒 Acceso protegido a archivo de radiografía:', filename);
+    console.log('👤 Usuario autenticado:', req.user.email);
+    
+    // Validar formato del filename por seguridad
+    if (!/^radiografia-\d+-\d+\.(pdf|jpg|jpeg|png|gif|dcm|dicom)$/.test(filename)) {
+      console.log('❌ Formato de archivo inválido:', filename);
+      return res.status(400).json({
+        success: false,
+        error: 'Formato de archivo no válido'
+      });
+    }
+    
+    const filePath = path.join(__dirname, 'uploads', 'radiografias', filename);
+    console.log('📂 Ruta del archivo:', filePath);
+    
+    // Verificar que el archivo existe
+    if (!fs.existsSync(filePath)) {
+      console.log('❌ Archivo no encontrado:', filePath);
+      
+      // Listar archivos disponibles para debugging
+      const dirPath = path.join(__dirname, 'uploads', 'radiografias');
+      try {
+        const files = fs.readdirSync(dirPath);
+        console.log('📋 Archivos disponibles en radiografías:', files.slice(0, 10));
+      } catch (err) {
+        console.log('📋 No se pudo leer directorio de radiografías:', err.message);
+      }
+      
+      return res.status(404).json({
+        success: false,
+        error: 'Archivo no encontrado',
+        filename,
+        path: filePath
+      });
+    }
+
+    // Establecer headers apropiados según el tipo de archivo
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      '.pdf': 'application/pdf',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.dcm': 'application/dicom',
+      '.dicom': 'application/dicom'
+    };
+
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+    
+    // Headers de seguridad y cache
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    console.log('✅ Sirviendo archivo de radiografía protegido:', {
+      filename,
+      mimeType,
+      size: fs.statSync(filePath).size,
+      usuario: req.user.email
+    });
+    
+    // Enviar el archivo
+    res.sendFile(filePath);
+    
+  } catch (error) {
+    console.error('❌ Error sirviendo archivo de radiografía protegido:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor',
+      message: error.message
+    });
+  }
+});
+
+// Handler para OPTIONS (preflight) de radiografías
+app.options('/api/uploads/radiografias/:filename', (req, res) => {
+  res.header('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL || 'http://98.82.131.153'] 
+    : 'http://localhost:3000');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(200);
+});
+
 
 // ========== MIDDLEWARE PRINCIPAL ==========
 app.use(cors({
@@ -157,6 +362,8 @@ app.get('/uploads/:tipo/:filename', (req, res) => {
     res.sendFile(filePath);
 });
 
+
+
 // Middleware específico para avatars con logging
 app.use('/uploads/avatars', (req, res, next) => {
     next();
@@ -273,7 +480,7 @@ const authRoutes = require('./routes/auth');
 const usuariosRoutes = require('./routes/usuarios');
 const pacientesRoutes = require('./routes/pacientes');
 const citasRoutes = require('./routes/citas');
-const tiposConsultaRoutes = require('./routes/tiposConsulta');
+const tiposConsultaRoutes = require('./routes/tiposConsulta'); // ← Verificar esta línea
 const radiografiasRoutes = require('./routes/radiografias');
 const consultasRoutes = require('./routes/consultas');
 const estudiosLaboratorioRoutes = require('./routes/estudios-laboratorio');
@@ -282,6 +489,7 @@ const consultasActualesRoutes = require('./routes/consultas-actuales');
 const odontogramaRoutes = require('./routes/odontograma');
 
 
+console.log('  • /api/tipos-consulta'); // ← Esta debe aparecer
 
 // ========== CONFIGURAR RUTAS ==========
 // ⚠️ IMPORTANTE: LOGIN SIN RESTRICCIÓN DE HORARIO
@@ -291,7 +499,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/usuarios', verificarHorarioAcceso, usuariosRoutes);
 app.use('/api/pacientes', verificarHorarioAcceso, pacientesRoutes);
 app.use('/api/citas', verificarHorarioAcceso, citasRoutes);
-app.use('/api/tipos-consulta', verificarHorarioAcceso, tiposConsultaRoutes);
+app.use('/api/tipos-consulta', verificarHorarioAcceso, tiposConsultaRoutes); // ← Verificar esta línea
 app.use('/api/radiografias', verificarHorarioAcceso, radiografiasRoutes);
 app.use('/api/consultas', verificarHorarioAcceso, consultasRoutes);
 app.use('/api/estudios-laboratorio', verificarHorarioAcceso, estudiosLaboratorioRoutes);
@@ -326,6 +534,9 @@ app.post('/api/test-json', (req, res) => {
         keys: Object.keys(req.body || {})
     });
 });
+
+
+
 
 // ========== RUTAS DE PRUEBA SIN RESTRICCIÓN ==========
 app.get('/api/test', (req, res) => {

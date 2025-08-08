@@ -1107,7 +1107,6 @@ router.put('/:id', verifyToken, verifyPacientesAccess, async (req, res) => {
     // 🎉 RESPUESTA EXITOSA
     res.json({ 
       success: true,
-      message: 'Paciente actualizado exitosamente',
       id: id,
       campos_actualizados: Object.keys(camposActualizar),
       datos_actualizados: camposActualizar,

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { buildApiUrl } from '../config/config.js';
-import { useAuth } from '../services/AuthContext.js'; // 🔑 USAR HOOK DE AUTH
-import '../css/ModalEditarPaciente.css';
+import { buildApiUrl } from '../../../config/config.js';
+import { useAuth } from '../../../services/AuthContext.js';
+import '../../../css/ModalEditarPaciente.css';
 import { toast } from 'react-toastify';
 
 const ModalEditarPaciente = ({ isOpen, onClose, paciente, onPacienteActualizado }) => {
@@ -262,14 +262,11 @@ const handleSubmit = async (e) => {
       calle_numero: datosEnvio.calle_numero
     };
 
-    toast.success('✅ Paciente actualizado exitosamente');
-
     // 🔑 NOTIFICAR AL COMPONENTE PADRE CON DATOS COMPLETOS
     if (onPacienteActualizado) {
       onPacienteActualizado({
         success: true,
         id: resultado.id || paciente.id,
-        message: resultado.message || 'Paciente actualizado exitosamente',
         campos_actualizados: resultado.campos_actualizados || Object.keys(datosEnvio),
         datos_actualizados: datosEnvio,
         paciente_completo: pacienteActualizado // 🔑 DATOS COMPLETOS PARA SINCRONIZACIÓN
