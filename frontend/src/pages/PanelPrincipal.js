@@ -1,4 +1,4 @@
-// pages/PanelPrincipal.js - CÓDIGO CORREGIDO
+// pages/PanelPrincipal.js - CÓDIGO CORREGIDO CON BOTÓN REPROGRAMAR
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
@@ -6,6 +6,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import AgendarCitasSidebar from '../components/AgendarCitasSidebar';
 import CalendarioDinamico from '../components/CalendarioDinamico';
 import DentalLoading from '../components/DentalLoading';
+import ReagendarCita from '../components/ReagendarCita'; // ✅ NUEVO IMPORT
+import { useAuth } from '../services/AuthContext';
+import { esAdministrador } from '../utils/horarioUtils';
 import {
   ConfirmModal,
   EstadoActualizadoModal,
@@ -22,43 +25,71 @@ import {
 } from '../components/modals/AlertaSystem';
 import '../css/PanelPrincipal.css';
 
-
 const PanelPrincipal = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [showAgendarCitas, setShowAgendarCitas] = useState(false);
+  
+  // ✅ NUEVO ESTADO PARA MODAL DE REAGENDAR
+  const [showReagendarCita, setShowReagendarCita] = useState(false);
+  const [citaParaReagendar, setCitaParaReagendar] = useState(null);
+  
   const [citasHoy, setCitasHoy] = useState([]);
   const [loadingCitas, setLoadingCitas] = useState(true);
   const [showTransitionLoading, setShowTransitionLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-
-  // ✅ HOOK ÚNICO PARA MODAL DE CANCELAR
   const cancelarModal = useModal();
 
-  // ✅ ESTADO PARA MODAL DE ÉXITO DE CITA CANCELADA
   const [successModal, setSuccessModal] = useState({
     isOpen: false,
     citaData: {}
   });
 
-  // ✅ ESTADO PARA MODAL DE ÉXITO DE CITA AGENDADA
   const [modalCitaAgendada, setModalCitaAgendada] = useState({
     isOpen: false,
     citaData: {}
   });
 
-  // ✅ ESTADO PARA MODAL DE CONSULTA (CORREGIDO)
   const [consultaModal, setConsultaModal] = useState({
     isOpen: false,
     citaData: {},
     pacienteNombre: ''
   });
 
-  // ✅ AGREGAR DEPENDENCIA A useEffect
+  // ✅ VERIFICAR SI ES ADMINISTRADOR
+  useEffect(() => {
+    const verificarRolAdmin = () => {
+      try {
+        const esAdminUtil = esAdministrador();
+        const rolUsuario = user?.rol || user?.role || user?.tipo_usuario || '';
+        const esAdminContext = rolUsuario.toLowerCase() === 'administrador' || 
+                              rolUsuario.toLowerCase() === 'admin';
+        const esAdminFinal = esAdminUtil || esAdminContext;
+        
+        console.log('🔍 [VERIFICACIÓN ADMIN] ===========================');
+        console.log('👤 Usuario actual:', user?.nombre || 'N/A');
+        console.log('🏷️ Rol del usuario:', rolUsuario);
+        console.log('✅ Es admin (util):', esAdminUtil);
+        console.log('✅ Es admin (context):', esAdminContext);
+        console.log('🎯 Es admin (final):', esAdminFinal);
+        console.log('===============================================');
+        
+        setIsAdmin(esAdminFinal);
+        
+      } catch (error) {
+        console.error('❌ Error verificando rol de administrador:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    verificarRolAdmin();
+  }, [user]);
+
   useEffect(() => {
     cargarDatosDashboard();
-  }, []); // Dependencia vacía está bien aquí
+  }, []);
 
-  // FUNCIÓN PARA OBTENER HEADERS DE AUTENTICACIÓN
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -95,7 +126,6 @@ const PanelPrincipal = () => {
           citasData = [];
         }
         
-        // Filtrar citas canceladas y no asistidas del panel
         const citasFiltradas = citasData.filter(cita => {
           return cita.estado !== 'Cancelada' && cita.estado !== 'No_Asistio';
         });
@@ -122,26 +152,60 @@ const PanelPrincipal = () => {
     setShowAgendarCitas(false);
   };
 
-  // ✅ FUNCIÓN ACTUALIZADA PARA MANEJAR CITA AGENDADA
+  // ✅ NUEVA FUNCIÓN PARA ABRIR MODAL DE REAGENDAR
+  const handleReagendarCita = (cita) => {
+    console.log('🔄 [REAGENDAR CITA] ===========================');
+    console.log('📋 Cita a reagendar:', cita);
+    
+    setCitaParaReagendar(cita);
+    setShowReagendarCita(true);
+  };
+
+  // ✅ NUEVA FUNCIÓN PARA CERRAR MODAL DE REAGENDAR
+  const handleCerrarReagendar = () => {
+    setShowReagendarCita(false);
+    setCitaParaReagendar(null);
+  };
+
+  // ✅ NUEVA FUNCIÓN PARA MANEJAR CITA REAGENDADA EXITOSAMENTE
+  const handleCitaReagendada = (citaActualizada) => {
+    console.log('✅ [CITA REAGENDADA] Cita actualizada exitosamente:', citaActualizada);
+    
+    // Recargar las citas del día
+    cargarDatosDashboard();
+    
+    // Mostrar modal de éxito
+    setModalCitaAgendada({
+      isOpen: true,
+      citaData: citaActualizada
+    });
+  };
+
+  const handleAbrirPanelControl = () => {
+    console.log('⚙️ [PANEL CONTROL] Abriendo panel administrativo...');
+    console.log('👤 Usuario:', user?.nombre);
+    console.log('🏷️ Rol:', user?.rol);
+    console.log('✅ Es administrador:', isAdmin);
+    
+    const panelControlUrl = 'http://localhost:3001';
+    window.open(panelControlUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const handleCitaAgendada = (citaData) => {
-    // Recargar dashboard
     cargarDatosDashboard();
       
-    // Preparar datos para el modal
     if (citaData) {
       console.log('📅 [CITA AGENDADA] Cita creada exitosamente');
       
-      // ✅ MOSTRAR MODAL SIMPLE DESPUÉS DE UN PEQUEÑO DELAY
       setTimeout(() => {
         setModalCitaAgendada({
           isOpen: true,
-          citaData: {} // No necesitamos pasar datos específicos
+          citaData: {}
         });
-      }, 500); // Delay para que se cierre el sidebar primero
+      }, 500);
     }
   };
 
-  // FUNCIÓN PARA ABRIR MODAL DE CANCELAR CITA
   const handleCancelarCita = (cita) => {
     console.log('🗑️ Abriendo modal para cancelar cita:', cita);
     cancelarModal.openModal({
@@ -156,14 +220,12 @@ const PanelPrincipal = () => {
     });
   };
 
-  // FUNCIÓN PARA CONFIRMAR CANCELACIÓN DE CITA
   const confirmarCancelarCita = async () => {
     try {
       const { citaId, pacienteNombre } = cancelarModal.modalData;
       
       console.log('🗑️ Cancelando cita ID:', citaId, 'Paciente:', pacienteNombre);
       
-      // Llamar al endpoint para cancelar la cita
       const response = await fetch(`/api/citas/${citaId}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
@@ -172,7 +234,6 @@ const PanelPrincipal = () => {
       if (response.ok) {
         console.log('✅ Cita cancelada exitosamente');
         
-        // ✅ MOSTRAR MODAL DE ÉXITO
         setSuccessModal({
           isOpen: true,
           citaData: {
@@ -182,7 +243,6 @@ const PanelPrincipal = () => {
           }
         });
         
-        // Recargar las citas
         cargarDatosDashboard();
         
       } else {
@@ -196,7 +256,6 @@ const PanelPrincipal = () => {
     }
   };
 
-  // FUNCIÓN PARA CERRAR MODAL DE ÉXITO DE CITA CANCELADA
   const handleCloseSuccessModal = () => {
     setSuccessModal({
       isOpen: false,
@@ -204,7 +263,6 @@ const PanelPrincipal = () => {
     });
   };
 
-  // ✅ FUNCIÓN PARA CERRAR MODAL DE ÉXITO DE CITA AGENDADA
   const handleCloseModalCitaAgendada = () => {
     setModalCitaAgendada({
       isOpen: false,
@@ -212,143 +270,125 @@ const PanelPrincipal = () => {
     });
   };
 
-  // ✅ FUNCIÓN ACTUALIZADA PARA INICIAR CONSULTA CON MODAL
-// ✅ FUNCIÓN CORREGIDA - Solo mostrar modal sin cambiar estado
-const handleIniciarConsulta = async (cita) => {
-  try {
-    console.log('🩺 [INICIAR CONSULTA] ===========================');
-    
-    const pacienteNombre = cita.paciente_nombre_completo || 
-                         `${cita.paciente_nombre || ''} ${cita.paciente_apellido || ''}`.trim() ||
-                         cita.nombre_paciente || 'Paciente';
-    
-    console.log('👤 Nombre del paciente:', pacienteNombre);
-    
-    // ✅ SOLO MOSTRAR MODAL - NO CAMBIAR ESTADO AÚN
-    setConsultaModal({
-      isOpen: true,
-      citaData: cita,
-      pacienteNombre: pacienteNombre
-    });
-    
-  } catch (error) {
-    console.error('❌ Error al preparar consulta:', error);
-    alert('❌ Error al preparar la consulta. Intente nuevamente.');
-  }
-};
-
-// ✅ FUNCIÓN MODIFICADA - Cambiar estado SOLO al confirmar
-const handleConfirmarIrHistorial = async () => {
-  const { citaData } = consultaModal;
-  
-  try {
-    console.log('🔄 Actualizando estado de cita a En_Proceso...');
-    console.log('📋 Datos de la cita:', citaData);
-    
-    // ✅ AHORA SÍ CAMBIAR EL ESTADO AL CONFIRMAR
-    const response = await fetch(`/api/citas/${citaData.id}`, {
-      method: 'PUT',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        estado: 'En_Proceso',
-        notas: `Paciente llegó - Consulta iniciada el ${new Date().toLocaleString('es-MX')}`
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Error al actualizar estado de la cita');
+  const handleIniciarConsulta = async (cita) => {
+    try {
+      console.log('🩺 [INICIAR CONSULTA] ===========================');
+      
+      const pacienteNombre = cita.paciente_nombre_completo || 
+                           `${cita.paciente_nombre || ''} ${cita.paciente_apellido || ''}`.trim() ||
+                           cita.nombre_paciente || 'Paciente';
+      
+      console.log('👤 Nombre del paciente:', pacienteNombre);
+      
+      setConsultaModal({
+        isOpen: true,
+        citaData: cita,
+        pacienteNombre: pacienteNombre
+      });
+      
+    } catch (error) {
+      console.error('❌ Error al preparar consulta:', error);
+      alert('❌ Error al preparar la consulta. Intente nuevamente.');
     }
+  };
 
-    console.log('✅ Estado de cita actualizado a En_Proceso');
+  const handleConfirmarIrHistorial = async () => {
+    const { citaData } = consultaModal;
     
-    // Recargar citas para mostrar el cambio
-    cargarDatosDashboard();
+    try {
+      console.log('🔄 Actualizando estado de cita a En_Proceso...');
+      console.log('📋 Datos de la cita:', citaData);
+      
+      const response = await fetch(`/api/citas/${citaData.id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          estado: 'En_Proceso',
+          notas: `Paciente llegó - Consulta iniciada el ${new Date().toLocaleString('es-MX')}`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar estado de la cita');
+      }
+
+      console.log('✅ Estado de cita actualizado a En_Proceso');
+      
+      cargarDatosDashboard();
+      
+      console.log('🦷 Iniciando transición con loading dental...');
+      
+      setConsultaModal({
+        isOpen: false,
+        citaData: {},
+        pacienteNombre: ''
+      });
+      
+      setShowTransitionLoading(true);
+      
+      const pacienteData = {
+        id: citaData.paciente_id,
+        nombre: citaData.paciente_nombre || '',
+        apellido_paterno: citaData.paciente_apellido || citaData.paciente_apellido_paterno || '',
+        apellido_materno: citaData.paciente_apellido_materno || '',
+        telefono: citaData.paciente_telefono || '',
+        correo_electronico: citaData.paciente_email || ''
+      };
+      
+      console.log('👤 Datos del paciente preparados:', pacienteData);
+      console.log('🔗 URL destino:', `/pacientes/${citaData.paciente_id}/historial`);
+      
+      setTimeout(() => {
+        console.log('🎯 Navegando a historial con consulta activa...');
+        
+        const navigationState = {
+          paciente: pacienteData,
+          origen: 'citas-del-dia',
+          vistaInicial: 'consulta-actual',
+          consultaIniciada: true,
+          citaId: citaData.id,
+          cita: citaData,
+          timestamp: Date.now()
+        };
+        
+        console.log('📦 Estado de navegación:', navigationState);
+        
+        navigate(`/pacientes/${citaData.paciente_id}/historial`, {
+          state: navigationState,
+          replace: true
+        });
+        
+        setTimeout(() => {
+          setShowTransitionLoading(false);
+          console.log('✅ Navegación ejecutada correctamente');
+        }, 500);
+        
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Error al confirmar consulta:', error);
+      alert(`❌ Error al iniciar la consulta: ${error.message}`);
+      
+      setShowTransitionLoading(false);
+    }
+  };
+
+  const handleTransitionLoadingComplete = () => {
+    setShowTransitionLoading(false);
+  };
+
+  const handleCerrarConsultaModal = () => {
+    console.log('❌ Usuario canceló el inicio de consulta');
     
-    console.log('🦷 Iniciando transición con loading dental...');
-    
-    // Cerrar modal de consulta
     setConsultaModal({
       isOpen: false,
       citaData: {},
       pacienteNombre: ''
     });
     
-    // ✅ MOSTRAR LOADING DENTAL DURANTE TRANSICIÓN
-    setShowTransitionLoading(true);
-    
-    // Preparar datos del paciente
-    const pacienteData = {
-      id: citaData.paciente_id,
-      nombre: citaData.paciente_nombre || '',
-      apellido_paterno: citaData.paciente_apellido || citaData.paciente_apellido_paterno || '',
-      apellido_materno: citaData.paciente_apellido_materno || '',
-      telefono: citaData.paciente_telefono || '',
-      correo_electronico: citaData.paciente_email || ''
-    };
-    
-    console.log('👤 Datos del paciente preparados:', pacienteData);
-    console.log('🔗 URL destino:', `/pacientes/${citaData.paciente_id}/historial`);
-    
-    // ✅ NAVEGAR DESPUÉS DEL LOADING DENTAL
-    setTimeout(() => {
-      console.log('🎯 Navegando a historial con consulta activa...');
-      
-      const navigationState = {
-        paciente: pacienteData,
-        origen: 'citas-del-dia',
-        vistaInicial: 'consulta-actual',
-        consultaIniciada: true,
-        citaId: citaData.id,
-        cita: citaData,
-        timestamp: Date.now()
-      };
-      
-      console.log('📦 Estado de navegación:', navigationState);
-      
-      // ✅ NAVEGACIÓN CORREGIDA - Usar el parámetro correcto
-      navigate(`/pacientes/${citaData.paciente_id}/historial`, {
-        state: navigationState,
-        replace: true // Esto evita problemas con el historial del navegador
-      });
-      
-      // ✅ OCULTAR LOADING DESPUÉS DE LA NAVEGACIÓN
-      setTimeout(() => {
-        setShowTransitionLoading(false);
-        console.log('✅ Navegación ejecutada correctamente');
-      }, 500);
-      
-    }, 2000); // Tiempo reducido para mejor UX
-    
-  } catch (error) {
-    console.error('❌ Error al confirmar consulta:', error);
-    alert(`❌ Error al iniciar la consulta: ${error.message}`);
-    
-    // En caso de error, ocultar loading
-    setShowTransitionLoading(false);
-  }
-};
-
-  // ✅ FUNCIÓN PARA COMPLETAR LOADING DE TRANSICIÓN
-  const handleTransitionLoadingComplete = () => {
-    setShowTransitionLoading(false);
+    console.log('✅ Cita mantiene su estado original');
   };
 
-
-// ✅ FUNCIÓN PARA CANCELAR - Solo cerrar modal sin cambios
-const handleCerrarConsultaModal = () => {
-  console.log('❌ Usuario canceló el inicio de consulta');
-  
-  setConsultaModal({
-    isOpen: false,
-    citaData: {},
-    pacienteNombre: ''
-  });
-  
-  // ✅ NO hacer nada más - la cita mantiene su estado original
-  console.log('✅ Cita mantiene su estado original');
-};
-
-  // FUNCIÓN PARA CONTINUAR CONSULTA
   const handleContinuarConsulta = (cita) => {
     console.log('🔄 [CONTINUAR CONSULTA] ===========================');
     console.log('📋 Cita:', cita);
@@ -410,7 +450,6 @@ const handleCerrarConsultaModal = () => {
 
   return (
     <>
-    {/* ✅ LOADING DENTAL PARA TRANSICIÓN A CONSULTA */}
       {showTransitionLoading && (
         <DentalLoading
           isLoading={showTransitionLoading}
@@ -425,7 +464,6 @@ const handleCerrarConsultaModal = () => {
         <Navbar />
 
         <div className="panel-principal-container">
-          {/* Barra de Navegación Rápida */}
           <div className="quick-navigation">
             <div className="nav-actions">
               <Link to="/pacientes" className="nav-action-card">
@@ -443,13 +481,25 @@ const handleCerrarConsultaModal = () => {
                   <span className="nav-action-subtitle">Nueva cita</span>
                 </div>
               </button>
+
+              {isAdmin && (
+                <button 
+                  onClick={handleAbrirPanelControl} 
+                  className="nav-action-card nav-action-admin"
+                  title="Panel de Control Administrativo (Puerto 3001)"
+                >
+                  <div className="nav-action-icon">⚙️</div>
+                  <div className="nav-action-content">
+                    <span className="nav-action-title">Panel de Control</span>
+                    <span className="nav-action-subtitle">Administración</span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Contenido Principal */}
           <div className="main-content">
             <div className="panels-row">
-              {/* Panel de Citas de Hoy */}
               <div className="content-panel citas-panel">
                 <div className="panel-header">
                   <div className="panel-title">
@@ -523,6 +573,20 @@ const handleCerrarConsultaModal = () => {
                               <span>🗑️</span>
                             </button>
                             
+                            {/* ✅ NUEVO BOTÓN REPROGRAMAR */}
+                            <button 
+                              className="action-btn action-btn-reschedule" 
+                              title="Reprogramar cita"
+                              onClick={() => handleReagendarCita(cita)}
+                              style={{
+                                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+                                color: 'white',
+                                border: 'none'
+                              }}
+                            >
+                              <span>🔄</span>
+                            </button>
+                            
                             {/* BOTONES DE CONSULTA */}
                             {cita.estado === 'Programada' || cita.estado === 'Confirmada' ? (
                               <button 
@@ -588,7 +652,6 @@ const handleCerrarConsultaModal = () => {
                 </div>
               </div>
 
-              {/* Panel del Calendario */}
               <div className="content-panel calendar-panel">
                 <div className="panel-header">
                   <div className="panel-title">
@@ -615,16 +678,22 @@ const handleCerrarConsultaModal = () => {
             </div>
           </div>
 
-          {/* Sidebar para agendar citas */}
           <AgendarCitasSidebar 
             isOpen={showAgendarCitas}
             onClose={handleCerrarSidebar}
             onCitaCreated={handleCitaAgendada}
           />
+
+          {/* ✅ NUEVO COMPONENTE DE REAGENDAR */}
+          <ReagendarCita
+            isOpen={showReagendarCita}
+            onClose={handleCerrarReagendar}
+            citaData={citaParaReagendar}
+            onCitaReagendada={handleCitaReagendada}
+          />
         </div>
       </div>
 
-      {/* MODAL PARA CANCELAR CITAS */}
       <CancelCitaModal
         isOpen={cancelarModal.isOpen}
         onClose={cancelarModal.closeModal}
@@ -632,7 +701,6 @@ const handleCerrarConsultaModal = () => {
         citaData={cancelarModal.modalData}
       />
 
-      {/* MODAL DE ÉXITO PARA CITA CANCELADA */}
       <CitaCanceladaSuccessModal
         isOpen={successModal.isOpen}
         onClose={handleCloseSuccessModal}
@@ -641,7 +709,6 @@ const handleCerrarConsultaModal = () => {
         autoCloseDelay={4000}
       />
 
-      {/* 🎉 MODAL SIMPLE DE ÉXITO PARA CITA AGENDADA */}
       <CitaAgendadaSuccessModal
         isOpen={modalCitaAgendada.isOpen}
         onClose={handleCloseModalCitaAgendada}
@@ -649,7 +716,6 @@ const handleCerrarConsultaModal = () => {
         autoCloseDelay={3000}
       />
 
-      {/* ✅ MODAL DE CONSULTA - POSICIÓN SUPERIOR IZQUIERDA */}
       <ConsultaModal
         isOpen={consultaModal.isOpen}
         onClose={handleCerrarConsultaModal}

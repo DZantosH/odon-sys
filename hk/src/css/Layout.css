@@ -1,0 +1,687 @@
+/* admin-panel/src/components/Layout.css - FULL WIDTH */
+
+/* ========== VARIABLES CSS ========== */
+:root {
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --secondary-color: #64748b;
+  --success-color: #059669;
+  --danger-color: #dc2626;
+  --warning-color: #d97706;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --sidebar-width: 280px;
+  --header-height: 80px;
+}
+
+/* ========== RESET Y BASE ========== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden; /* ✅ Evitar scroll horizontal */
+}
+
+/* ========== LAYOUT PRINCIPAL - FULL WIDTH ========== */
+.layout-container {
+  min-height: 100vh;
+  height: 100vh; /* ✅ Altura completa */
+  background-color: var(--gray-50);
+  display: flex;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  width: 100vw; /* ✅ Ancho completo de viewport */
+  position: relative;
+  overflow: hidden; /* ✅ Sin overflow */
+}
+
+/* ========== OVERLAY ========== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--white);
+  border-right: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  box-shadow: var(--shadow-lg);
+}
+
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--white);
+}
+
+/* Header del sidebar */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  color: var(--white);
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.logo-text h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.logo-text p {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.close-button {
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  color: var(--white);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ========== NAVEGACIÓN ========== */
+.navigation {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-xl);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  color: var(--gray-600);
+  position: relative;
+}
+
+.nav-item:hover {
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+}
+
+.nav-item-active {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.nav-item-disabled {
+  color: var(--gray-400);
+  cursor: not-allowed;
+}
+
+.nav-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--gray-100);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.nav-item-active .nav-icon {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+}
+
+.nav-item:hover .nav-icon {
+  background-color: var(--gray-200);
+}
+
+.nav-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-description {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-indicator {
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+}
+
+.coming-soon-badge {
+  font-size: 0.75rem;
+  background-color: var(--gray-100);
+  color: var(--gray-500);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+}
+
+/* ========== SECCIÓN DE USUARIO ========== */
+.user-section {
+  border-top: 1px solid var(--gray-200);
+  padding: 1rem;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: var(--gray-50);
+  border-radius: var(--radius-xl);
+}
+
+.user-avatar-large {
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: 700;
+  font-size: 1.125rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.user-info-sidebar {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name-sidebar {
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: var(--danger-color);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.logout-button:hover {
+  background-color: rgba(220, 38, 38, 0.05);
+}
+
+.logout-icon {
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(220, 38, 38, 0.1);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover .logout-icon {
+  background-color: rgba(220, 38, 38, 0.2);
+}
+
+/* ========== CONTENIDO PRINCIPAL - FULL WIDTH ========== */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  height: 100vh; /* ✅ Altura completa */
+  margin-left: 0;
+}
+
+/* ========== HEADER - FULL WIDTH ========== */
+.header {
+  background-color: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 1rem 1.5rem; /* ✅ Menos padding lateral */
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  flex-shrink: 0; /* ✅ No se encoja */
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: none; /* ✅ Sin límite de ancho */
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.menu-button {
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  color: var(--gray-600);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-button:hover {
+  color: var(--gray-900);
+  background-color: var(--gray-100);
+}
+
+.page-title h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 0.25rem 0;
+}
+
+.page-date {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ========== NOTIFICACIONES ========== */
+.notification-button {
+  position: relative;
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  color: var(--gray-600);
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.notification-button:hover {
+  color: var(--gray-900);
+  background-color: var(--gray-100);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--danger-color);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========== INFO DE USUARIO EN HEADER ========== */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-details {
+  text-align: right;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin: 0 0 0.125rem 0;
+}
+
+.user-role {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin: 0;
+}
+
+.user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== CONTENIDO - FULL WIDTH ========== */
+.content {
+  flex: 1;
+  overflow: auto;
+  background-color: var(--gray-50);
+  padding: 1.5rem; /* ✅ Padding reducido para más espacio */
+  width: 100%;
+  height: calc(100vh - var(--header-height)); /* ✅ Altura calculada */
+  max-width: none; /* ✅ Sin límite de ancho */
+  margin: 0; /* ✅ Sin márgenes */
+}
+
+/* ========== RESPONSIVE DESIGN - FULL WIDTH ========== */
+
+/* Desktop - FULL WIDTH */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    transform: translateX(0);
+    box-shadow: none;
+    border-right: 1px solid var(--gray-200);
+    z-index: 10;
+  }
+  
+  .main-content {
+    margin-left: var(--sidebar-width); /* ✅ Margen para sidebar */
+    width: calc(100vw - var(--sidebar-width)); /* ✅ Ancho calculado del viewport */
+    height: 100vh;
+  }
+  
+  .menu-button {
+    display: none;
+  }
+  
+  .page-date {
+    display: block;
+  }
+  
+  .user-info {
+    display: flex;
+  }
+  
+  .header {
+    width: 100%; /* ✅ Ancho completo del contenedor */
+    margin-left: 0; /* ✅ Sin margen */
+    position: sticky; /* ✅ Sticky en lugar de fixed */
+  }
+  
+  .content {
+    padding: 2rem 1.5rem; /* ✅ Padding optimizado */
+    height: auto; /* ✅ Altura automática */
+    min-height: calc(100vh - var(--header-height));
+  }
+}
+
+/* Extra Large Desktop - MÁS ESPACIO */
+@media (min-width: 1440px) {
+  .content {
+    padding: 2rem 2rem; /* ✅ Más padding en pantallas grandes */
+  }
+}
+
+/* Ultra Wide - MÁXIMO ESPACIO */
+@media (min-width: 1920px) {
+  .content {
+    padding: 2rem 3rem; /* ✅ Padding máximo para ultra wide */
+  }
+}
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed;
+    z-index: 50;
+  }
+  
+  .main-content {
+    margin-left: 0;
+    width: 100vw; /* ✅ Ancho completo */
+  }
+  
+  .header {
+    width: 100%;
+    margin-left: 0;
+    position: sticky;
+  }
+  
+  .content {
+    padding: 1.5rem 1rem;
+    height: auto;
+  }
+  
+  .page-title h1 {
+    font-size: 1.5rem;
+  }
+  
+  .user-info {
+    display: none;
+  }
+  
+  .header {
+    padding: 1rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .page-title h1 {
+    font-size: 1.25rem;
+  }
+  
+  .page-date {
+    display: none;
+  }
+  
+  .header {
+    padding: 0.75rem;
+  }
+  
+  .content {
+    padding: 1rem 0.75rem; /* ✅ Padding mínimo en mobile */
+  }
+  
+  .sidebar {
+    width: 280px;
+  }
+  
+  .navigation {
+    padding: 1rem 0.75rem;
+  }
+  
+  .main-content {
+    width: 100vw; /* ✅ Ancho completo en mobile */
+  }
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nav-item {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ========== UTILITIES ========== */
+.hidden {
+  display: none !important;
+}
+
+.visible {
+  display: block !important;
+}
+
+/* ========== SCROLLBAR STYLING ========== */
+.navigation::-webkit-scrollbar,
+.content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.navigation::-webkit-scrollbar-track,
+.content::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.navigation::-webkit-scrollbar-thumb,
+.content::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-sm);
+}
+
+.navigation::-webkit-scrollbar-thumb:hover,
+.content::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* ========== FOCUS STATES ========== */
+.nav-item:focus,
+.menu-button:focus,
+.notification-button:focus,
+.logout-button:focus,
+.close-button:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+  .sidebar,
+  .header {
+    display: none;
+  }
+  
+  .main-content {
+    margin: 0;
+    width: 100%;
+  }
+  
+  .content {
+    padding: 0;
+  }
+}

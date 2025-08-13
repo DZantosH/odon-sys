@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-// import './ExamenIntrabucal.css';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const ExamenIntrabucal = ({ datos: externalData, onChange: externalOnChange, errores = {} }) => {
   // Estado local por defecto

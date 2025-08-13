@@ -31,6 +31,10 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
   // Estados para horarios dinámicos
   const [horariosOcupados, setHorariosOcupados] = useState([]);
   const [citasDelDia, setCitasDelDia] = useState([]);
+  
+  // 🆕 NUEVO: Estado para horarios disponibles desde BD
+  const [horariosDisponibles, setHorariosDisponibles] = useState([]);
+  const [loadingHorariosTrabajo, setLoadingHorariosTrabajo] = useState(true);
 
   // ✅ FUNCIÓN AUXILIAR PARA OBTENER FECHA ACTUAL CORRECTA
   const obtenerFechaHoy = () => {
@@ -41,20 +45,59 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
     return `${año}-${mes}-${dia}`;
   };
 
-  // Horarios disponibles (11:00 - 20:00)
-  const horariosDisponibles = [];
-  for (let hour = 11; hour <= 20; hour++) {
-    for (let min = 0; min < 60; min += 30) {
-      const timeString = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
-      horariosDisponibles.push(timeString);
+  // 🆕 CARGAR HORARIOS DE TRABAJO DESDE BD
+  const cargarHorariosTrabajo = async () => {
+    try {
+      setLoadingHorariosTrabajo(true);
+      console.log('⏰ [AGENDAR] Cargando horarios de trabajo desde BD...');
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/citas/horarios/trabajo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ [AGENDAR] Horarios de trabajo recibidos:', data);
+        
+        setHorariosDisponibles(data.horarios || []);
+        
+        if (data.horarios && data.horarios.length > 0) {
+          console.log(`📅 [AGENDAR] ${data.horarios.length} horarios cargados desde ${data.horarios[0]} hasta ${data.horarios[data.horarios.length - 1]}`);
+        }
+      } else {
+        console.error('❌ [AGENDAR] Error al cargar horarios de trabajo:', response.status);
+        // Fallback con horarios extendidos desde 8:30
+        setHorariosDisponibles([
+          '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+          '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00',
+          '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+          '19:00', '19:30', '20:00'
+        ]);
+      }
+    } catch (error) {
+      console.error('❌ [AGENDAR] Error de conexión al cargar horarios:', error);
+      // Fallback
+      setHorariosDisponibles([
+        '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00',
+        '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+        '19:00', '19:30', '20:00'
+      ]);
+    } finally {
+      setLoadingHorariosTrabajo(false);
     }
-  }
+  };
 
   // Cargar datos iniciales
   useEffect(() => {
     if (isOpen) {
       cargarDoctores();
       cargarTiposConsulta();
+      cargarHorariosTrabajo(); // 🆕 CARGAR HORARIOS DE TRABAJO
       resetForm();
     }
   }, [isOpen]);
@@ -78,7 +121,7 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
       edad: '',
       telefono: '',
       tipo_consulta_id: '',
-      fecha_consulta: obtenerFechaHoy(), // ✅ AUTO-SELECCIONAR HOY CON FECHA CORRECTA
+      fecha_consulta: obtenerFechaHoy(),
       horario_consulta: '',
       doctor_id: '',
       observaciones: '',
@@ -380,19 +423,19 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
     if (success) setSuccess('');
   };
 
-  // ✅ FUNCIÓN CORREGIDA PARA FILTRAR HORARIOS DISPONIBLES
+  // ✅ FUNCIÓN ACTUALIZADA PARA USAR HORARIOS DINÁMICOS
   const getHorariosDisponiblesParaFecha = () => {
     const fechaSeleccionada = formData.fecha_consulta;
     if (!fechaSeleccionada) return horariosDisponibles;
     
-    // ✅ USAR FECHA LOCAL CORRECTA
     const hoyString = obtenerFechaHoy();
     
-    console.log('🔍 DEBUG - Comparando fechas CORREGIDO:');
+    console.log('🔍 DEBUG - Horarios dinámicos:');
     console.log('Hoy (LOCAL):', hoyString);
     console.log('Fecha seleccionada:', fechaSeleccionada);
-    console.log('Son iguales?', fechaSeleccionada === hoyString);
-    console.log('Horarios base disponibles:', horariosDisponibles.length);
+    console.log('Horarios base desde BD:', horariosDisponibles.length);
+    console.log('Primer horario:', horariosDisponibles[0]);
+    console.log('Último horario:', horariosDisponibles[horariosDisponibles.length - 1]);
     
     // Si es el mismo día, filtrar horarios que ya pasaron
     if (fechaSeleccionada === hoyString) {
@@ -404,16 +447,15 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
       console.log('Hora actual:', `${horaActual}:${String(minutosActuales).padStart(2, '0')}`);
       
       const horariosFiltrados = horariosDisponibles.filter(horario => {
-  const [hora, minutos] = horario.split(':').map(Number);
-  const horarioEnMinutos = (hora * 60) + minutos;
-  const ahoraEnMinutos = (horaActual * 60) + minutosActuales;
-  
-  // ✅ CAMBIAR: Sin margen adicional, solo horarios que ya pasaron
-  const disponible = horarioEnMinutos > ahoraEnMinutos;
-  console.log(`Horario ${horario}: ${disponible ? 'DISPONIBLE' : 'PASADO'} (${horarioEnMinutos} > ${ahoraEnMinutos})`);
-  
-  return disponible;
-});
+        const [hora, minutos] = horario.split(':').map(Number);
+        const horarioEnMinutos = (hora * 60) + minutos;
+        const ahoraEnMinutos = (horaActual * 60) + minutosActuales;
+        
+        const disponible = horarioEnMinutos > ahoraEnMinutos;
+        console.log(`Horario ${horario}: ${disponible ? 'DISPONIBLE' : 'PASADO'} (${horarioEnMinutos} > ${ahoraEnMinutos})`);
+        
+        return disponible;
+      });
       
       console.log('Horarios filtrados para hoy:', horariosFiltrados.length);
       return horariosFiltrados;
@@ -459,30 +501,19 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
       return false;
     }
 
-    // ✅ VALIDACIÓN CORREGIDA PARA FECHAS
-    const hoyString = obtenerFechaHoy(); // ✅ USAR FECHA LOCAL CORRECTA
+    const hoyString = obtenerFechaHoy();
     const fechaSeleccionada = formData.fecha_consulta;
     
-    console.log('🔍 VALIDACIÓN DE FECHA (CORREGIDA):');
-    console.log('Hoy (LOCAL):', hoyString);
-    console.log('Fecha seleccionada:', fechaSeleccionada);
-    
-    // No permitir fechas anteriores a hoy (comparación simple de strings)
     if (fechaSeleccionada < hoyString) {
       setError('La fecha de la cita no puede ser anterior a hoy');
       return false;
     }
     
-    // ✅ VALIDACIÓN ESPECIAL PARA EL MISMO DÍA
     if (fechaSeleccionada === hoyString) {
-      console.log('✅ Es el mismo día - Validando horarios');
-      
       const ahora = new Date();
       const horaActual = ahora.getHours();
       const minutosActuales = ahora.getMinutes();
       const minutosActualesTotal = (horaActual * 60) + minutosActuales;
-      
-      console.log('Hora actual:', `${horaActual}:${minutosActuales} (${minutosActualesTotal} minutos)`);
       
       const limiteCitasMismoDia = 1170; // 7:30 PM
       
@@ -494,20 +525,22 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
       const [horaSeleccionada, minutosSeleccionados] = formData.horario_consulta.split(':').map(Number);
       const minutosSeleccionadosTotal = (horaSeleccionada * 60) + minutosSeleccionados;
       
-      console.log('Hora seleccionada:', `${horaSeleccionada}:${minutosSeleccionados} (${minutosSeleccionadosTotal} minutos)`);
-      
       if (minutosSeleccionadosTotal <= minutosActualesTotal) {
         setError('⏰ La hora seleccionada ya ha pasado. Seleccione una hora futura.');
         return false;
       }
-      
-      console.log('✅ Validación de mismo día PASADA');
     }
 
-    const hora = formData.horario_consulta;
-    if (hora < '11:00' || hora > '20:00') {
-      setError('El horario debe ser entre 11:00 y 20:00');
-      return false;
+    // ✅ VALIDACIÓN ACTUALIZADA PARA HORARIOS DINÁMICOS
+    if (horariosDisponibles.length > 0) {
+      const hora = formData.horario_consulta;
+      const primerHorario = horariosDisponibles[0];
+      const ultimoHorario = horariosDisponibles[horariosDisponibles.length - 1];
+      
+      if (hora < primerHorario || hora > ultimoHorario) {
+        setError(`El horario debe ser entre ${primerHorario} y ${ultimoHorario}`);
+        return false;
+      }
     }
 
     if (isHorarioOcupado(formData.horario_consulta)) {
@@ -519,7 +552,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
     return true;
   };
 
-  // ✅ FUNCIÓN DE SUBMIT CORREGIDA SIN MODAL INTERNO
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -569,7 +601,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
       if (response.ok) {
         console.log('✅ Cita agendada exitosamente');
         
-        // ✅ PREPARAR DATOS PARA EL MODAL (SERÁ MANEJADO POR EL PADRE)
         const citaDataParaModal = {
           pacienteNombre: `${formData.nombre} ${formData.apellido_paterno}`.trim(),
           fecha: formData.fecha_consulta,
@@ -583,12 +614,10 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
           precio: formData.precio
         };
 
-        // ✅ LLAMAR CALLBACK CON LOS DATOS PARA EL MODAL
         if (onCitaCreated) {
-          onCitaCreated(citaDataParaModal); // Pasar datos del modal al padre
+          onCitaCreated(citaDataParaModal);
         }
 
-        // ✅ RESETEAR Y CERRAR SIDEBAR
         resetForm();
         onClose();
 
@@ -642,6 +671,21 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
           </button>
         </div>
 
+        {/* ✅ MOSTRAR INFO DE HORARIOS CARGADOS */}
+        {!loadingHorariosTrabajo && horariosDisponibles.length > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg, #06D6A0 0%, #87CEEB 100%)',
+            color: 'white',
+            padding: '8px 16px',
+            margin: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            textAlign: 'center'
+          }}>
+            ⏰ Horarios disponibles: {horariosDisponibles[0]} - {horariosDisponibles[horariosDisponibles.length - 1]}
+          </div>
+        )}
+
         {/* Contenido */}
         <div className="agendar-citas-content">
           {/* Mensajes de estado */}
@@ -656,6 +700,21 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
             <div className="agendar-citas-success">
               <span>✅</span>
               <span>{success}</span>
+            </div>
+          )}
+
+          {/* ✅ MOSTRAR MENSAJE DE CARGA INICIAL */}
+          {loadingHorariosTrabajo && (
+            <div style={{
+              background: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              color: '#0369a1',
+              padding: '12px',
+              margin: '8px 0',
+              borderRadius: '6px',
+              textAlign: 'center'
+            }}>
+              🔄 Cargando configuración de horarios...
             </div>
           )}
 
@@ -832,7 +891,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                       {tipo.nombre} - {formatPrice(tipo.precio)}
                     </option>
                   ))}
-                  {/* 🆕 OPCIÓN PERSONALIZADA */}
                   <option value="personalizada">
                     💰 Consulta Personalizada (Precio por definir)
                   </option>
@@ -859,7 +917,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                 })()
               )}
               
-              {/* 🆕 INFORMACIÓN PARA CONSULTA PERSONALIZADA */}
               {formData.tipo_consulta_id === 'personalizada' && (
                 <div style={{
                   marginTop: '8px',
@@ -891,7 +948,7 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                 name="fecha_consulta"
                 value={formData.fecha_consulta}
                 onChange={handleInputChange}
-                min={obtenerFechaHoy()} // ✅ RESTRICCIÓN: Solo desde hoy en adelante
+                min={obtenerFechaHoy()}
                 className="form-control"
                 required
               />
@@ -919,15 +976,27 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
               </select>
             </div>
 
-            {/* 🆕 HORARIO CON BOTONES MEJORADOS */}
+            {/* ✅ HORARIO ACTUALIZADO CON HORARIOS DINÁMICOS */}
             <div className="form-group">
               <label className="field-label">
                 <span>🕐</span>
                 <span>Horario *</span>
                 {loadingHorarios && <span style={{ color: '#06D6A0', fontSize: '12px' }}> (Consultando disponibilidad...)</span>}
+                {loadingHorariosTrabajo && <span style={{ color: '#f59e0b', fontSize: '12px' }}> (Cargando horarios...)</span>}
               </label>
               
-              {!formData.fecha_consulta || !formData.doctor_id ? (
+              {loadingHorariosTrabajo ? (
+                <div style={{
+                  padding: '12px',
+                  background: '#fef3c7',
+                  borderRadius: '8px',
+                  color: '#92400e',
+                  textAlign: 'center',
+                  border: '2px solid #fbbf24'
+                }}>
+                  🔄 Cargando configuración de horarios desde base de datos...
+                </div>
+              ) : !formData.fecha_consulta || !formData.doctor_id ? (
                 <div style={{
                   padding: '12px',
                   background: '#f3f4f6',
@@ -968,7 +1037,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                       const ocupado = isHorarioOcupado(hora);
                       const seleccionado = formData.horario_consulta === hora;
                       
-                      // ✅ USAR FECHA LOCAL CORRECTA
                       const hoyString = obtenerFechaHoy();
                       const esHoy = formData.fecha_consulta === hoyString;
                       
@@ -977,40 +1045,35 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                         const ahora = new Date();
                         const [horaHorario, minutosHorario] = hora.split(':').map(Number);
                         const horarioEnMinutos = (horaHorario * 60) + minutosHorario;
-                        const ahoraEnMinutos = (ahora.getHours() * 60) + ahora.getMinutes(); // ✅ SIN MARGEN
+                        const ahoraEnMinutos = (ahora.getHours() * 60) + ahora.getMinutes();
                         yaPaso = horarioEnMinutos <= ahoraEnMinutos;
-                        
-                        // ✅ LOGS PARA VERIFICAR (puedes quitarlos después)
-                        console.log(`🕐 Hora actual: ${ahora.getHours()}:${ahora.getMinutes().toString().padStart(2, '0')}`);
-                        console.log(`⏰ Evaluando horario ${hora}: ${yaPaso ? 'YA PASÓ' : 'DISPONIBLE'}`);
                       }
                       
                       const disponible = !ocupado && !yaPaso;
                       
-                      // ✅ DETERMINAR COLORES SEGÚN ESTADO
                       let backgroundColor, color, borderColor, icon, titulo;
                       
                       if (yaPaso) {
-                        backgroundColor = '#fef3c7'; // Amarillo claro
-                        color = '#92400e'; // Marrón
+                        backgroundColor = '#fef3c7';
+                        color = '#92400e';
                         borderColor = '#fbbf24';
                         icon = '⌛';
-                        titulo = `Ya pasó: ${hora} (requiere 1h de anticipación)`;
+                        titulo = `Ya pasó: ${hora}`;
                       } else if (ocupado) {
-                        backgroundColor = '#fee2e2'; // Rojo claro
-                        color = '#dc2626'; // Rojo
+                        backgroundColor = '#fee2e2';
+                        color = '#dc2626';
                         borderColor = '#f87171';
                         icon = '❌';
                         titulo = `Ocupado: ${getInfoCitaEnHorario(hora)}`;
                       } else if (seleccionado) {
-                        backgroundColor = '#06D6A0'; // Verde principal
+                        backgroundColor = '#06D6A0';
                         color = 'white';
                         borderColor = '#06D6A0';
                         icon = '✅';
                         titulo = `Seleccionado: ${hora}`;
                       } else {
                         backgroundColor = 'white';
-                        color = '#1E3A8A'; // Azul
+                        color = '#1E3A8A';
                         borderColor = '#e2e8f0';
                         icon = '⏰';
                         titulo = `Disponible: ${hora}`;
@@ -1067,7 +1130,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                     </div>
                   )}
                   
-                  {/* Input hidden para el formulario */}
                   <input
                     type="hidden"
                     name="horario_consulta"
@@ -1078,28 +1140,7 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
               )}
               
               {/* Mostrar mensaje si no hay horarios disponibles */}
-              {formData.fecha_consulta && formData.doctor_id && 
-               horariosOcupados.length === getHorariosDisponiblesParaFecha().length && 
-               getHorariosDisponiblesParaFecha().length > 0 && (
-                <div style={{
-                  marginTop: '8px',
-                  padding: '10px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: '6px',
-                  color: '#dc2626',
-                  fontSize: '12px',
-                  textAlign: 'center'
-                }}>
-                  <span>⚠️</span>
-                  <strong> No hay horarios disponibles para esta fecha y doctor.</strong>
-                  <br />
-                  Por favor seleccione otra fecha.
-                </div>
-              )}
-              
-              {/* ✅ MENSAJE ESPECIAL PARA MISMO DÍA SIN HORARIOS */}
-              {formData.fecha_consulta && formData.doctor_id && 
+              {!loadingHorariosTrabajo && !loadingHorarios && formData.fecha_consulta && formData.doctor_id && 
                getHorariosDisponiblesParaFecha().length === 0 && (
                 <div style={{
                   marginTop: '8px',
@@ -1112,9 +1153,9 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                   textAlign: 'center'
                 }}>
                   <span>⏰</span>
-                  <strong> No hay horarios disponibles para hoy.</strong>
+                  <strong> No hay horarios disponibles.</strong>
                   <br />
-                  Las citas del mismo día solo pueden agendarse hasta las 7:30 PM.
+                  Por favor seleccione otra fecha.
                 </div>
               )}
             </div>
@@ -1158,7 +1199,6 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
                 }}
               />
               
-              {/* Ayuda para consulta personalizada */}
               {formData.tipo_consulta_id === 'personalizada' && (
                 <div style={{
                   marginTop: '4px',
@@ -1201,9 +1241,9 @@ const AgendarCitasSidebar = ({ isOpen, onClose, onCitaCreated }) => {
               <button
                 type="submit"
                 className="btn-submit-agendar"
-                disabled={loading || loadingTipos || loadingHorarios || 
+                disabled={loading || loadingTipos || loadingHorarios || loadingHorariosTrabajo ||
                          (formData.fecha_consulta && formData.doctor_id && 
-                          horariosOcupados.length === getHorariosDisponiblesParaFecha().length)}
+                          getHorariosDisponiblesParaFecha().length === 0)}
               >
                 {loading ? (
                   <>

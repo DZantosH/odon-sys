@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import '../HistorialClinico.css';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const SeccionesOclusion = ({ datos: externalData, onChange: externalOnChange, errores = {} }) => {
   // Estado local por defecto - Estructura según PDF

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import '../css/PanelPrincipal.css';
+import '../css/CalendarioDinamico.css';
 import useAutoUpdateCitas from '../hooks/useAutoUpdateCitas';
-import { buildApiUrl, getAuthHeaders } from '../config/config'; // ← Usar config.js
+import { buildApiUrl, getAuthHeaders } from '../config/config';
 
 const CalendarioDinamico = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -10,8 +10,8 @@ const CalendarioDinamico = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [showCitasDelDia, setShowCitasDelDia] = useState(false);
   const [citasDelDiaSeleccionado, setCitasDelDiaSeleccionado] = useState([]);
+  const [isPastSelected, setIsPastSelected] = useState(false);
 
-  // Usar el hook pero solo necesitamos ultimaActualizacion para recargar datos
   const { ultimaActualizacion } = useAutoUpdateCitas();
   
   const monthNames = [
@@ -21,15 +21,12 @@ const CalendarioDinamico = () => {
 
   const dayNames = ['DOM', 'LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'];
 
-  // Función para limpiar observaciones de logs automáticos
   const limpiarObservaciones = (observaciones) => {
     if (!observaciones) return '';
     
-    // Filtrar líneas que contienen logs automáticos del sistema
     const lineasLimpias = observaciones
       .split('\n')
       .filter(linea => {
-        // Filtrar líneas que contengan patrones de logs automáticos
         const patronesAFiltrar = [
           '[CORRECCIÓN MANUAL]',
           'Estado corregido de',
@@ -58,14 +55,11 @@ const CalendarioDinamico = () => {
       
       if (response.ok) {
         const data = await response.json();        
-        const hoy = new Date();
-        const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
         const conteosPorDia = {};
         
         data.forEach((cita, index) => {
           const fechaCita = cita.fecha_cita;
           let dia = null;
-          let fechaCitaObj = null;
           
           try {
             if (typeof fechaCita === 'string' && fechaCita.includes('-')) {
@@ -74,18 +68,16 @@ const CalendarioDinamico = () => {
               const mesCita = parseInt(partes[1]);
               const diaCita = parseInt(partes[2]);
               
-              fechaCitaObj = new Date(añoCita, mesCita - 1, diaCita);
-              
               if (añoCita === year && mesCita === month) {
                 dia = diaCita;
               }
             } else if (fechaCita instanceof Date) {
-              fechaCitaObj = new Date(fechaCita);
+              const fechaCitaObj = new Date(fechaCita);
               if (fechaCitaObj.getFullYear() === year && (fechaCitaObj.getMonth() + 1) === month) {
                 dia = fechaCitaObj.getDate();
               }
             } else {
-              fechaCitaObj = new Date(fechaCita);
+              const fechaCitaObj = new Date(fechaCita);
               
               if (!isNaN(fechaCitaObj.getTime()) && 
                   fechaCitaObj.getFullYear() === year && 
@@ -94,10 +86,9 @@ const CalendarioDinamico = () => {
               }
             }
             
-            if (dia && !isNaN(dia) && dia >= 1 && dia <= 31 && fechaCitaObj) {
-              if (fechaCitaObj >= fechaHoy) {
-                conteosPorDia[dia] = (conteosPorDia[dia] || 0) + 1;
-              }
+            // ✅ ARREGLO: Contar TODAS las citas del día (no filtrar por fecha pasada)
+            if (dia && !isNaN(dia) && dia >= 1 && dia <= 31) {
+              conteosPorDia[dia] = (conteosPorDia[dia] || 0) + 1;
             }
             
           } catch (error) {
@@ -105,6 +96,7 @@ const CalendarioDinamico = () => {
           }
         });
         
+        console.log('📊 Conteo de citas por día:', conteosPorDia);
         setCitasPorDia(conteosPorDia);
       } else {
         console.error('❌ Error al cargar citas del mes:', response.status);
@@ -119,44 +111,33 @@ const CalendarioDinamico = () => {
   }, [currentDate]);
 
   const cargarCitasDelDia = async (fecha) => {
-    try {
-      const fechaFormatted = fecha.toISOString().split('T')[0];
-      
-      const response = await fetch(buildApiUrl(`/citas/fecha/${fechaFormatted}`), {
-        headers: getAuthHeaders()
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        let citas = result.data || result || [];
-        
-        const ahora = new Date();
-        const fechaSeleccionada = new Date(fecha);
-        
-        // Solo filtrar si la fecha seleccionada es anterior al día de hoy
-        if (fechaSeleccionada < new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate())) {
-          citas = [];
-        } else {
-          // ✅ NUEVO: Si es hoy o una fecha futura, mostrar TODAS las citas sin filtrar por hora
-          // No aplicamos filtro de hora para el calendario - mostramos todas las citas del día
-          console.log(`📅 [CALENDARIO] Mostrando todas las citas del ${fechaFormatted}:`, citas.length);
-        }
-        
-        setCitasDelDiaSeleccionado(citas);
-      } else {
-        setCitasDelDiaSeleccionado([]);
-      }
-    } catch (error) {
-      console.error('❌ Error al cargar citas del día:', error);
+  try {
+    const fechaFormatted = fecha.toISOString().split('T')[0];
+
+    const response = await fetch(buildApiUrl(`/citas/fecha/${fechaFormatted}`), {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      const citas = result.data || result || [];
+      setCitasDelDiaSeleccionado(citas);   // <-- siempre mostrar, también pasadas
+    } else {
       setCitasDelDiaSeleccionado([]);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error al cargar citas del día:', error);
+    setCitasDelDiaSeleccionado([]);
+  }
+};
+
 
   useEffect(() => {
     cargarCitasDelMes();
-  }, [cargarCitasDelMes, ultimaActualizacion]); // Agregar ultimaActualizacion como dependencia
+  }, [cargarCitasDelMes, ultimaActualizacion]);
 
   const generateCalendar = () => {
+    
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     
@@ -172,6 +153,7 @@ const CalendarioDinamico = () => {
         <div key={day} className="modal-calendario-day modal-calendario-header">
           {day}
         </div>
+        
       );
     });
     
@@ -188,15 +170,19 @@ const CalendarioDinamico = () => {
       
       let clases = ['modal-calendario-day', 'modal-calendario-clickable'];
       
+      // ✅ ARREGLO: Aplicar el color basado en la cantidad de citas
+      if (estadoColor) {
+        clases.push(estadoColor);
+      }
+      
+      // ✅ ARREGLO: El día actual tiene prioridad visual pero mantiene el color de citas
       if (isToday) {
         clases.push('modal-calendario-today');
       }
       
-      if (estadoColor && estadoColor !== 'modal-calendario-estado-vacio') {
-        clases.push(estadoColor);
-      }
-      
       const clasesFinales = clases.join(' ');
+      
+      console.log(`📅 Día ${day}: ${cantidadCitas} citas → ${estadoColor}`);
       
       calendar.push(
         <div 
@@ -230,24 +216,32 @@ const CalendarioDinamico = () => {
            day === today.getDate();
   };
 
+  // ✅ ARREGLO: Función corregida para aplicar colores correctos
   const getEstadoColor = (cantidadCitas) => {
+    if (cantidadCitas === 0) return 'modal-calendario-estado-vacio';
+    if (cantidadCitas >= 1 && cantidadCitas <= 2) return 'modal-calendario-estado-libre';
+    if (cantidadCitas >= 3 && cantidadCitas <= 4) return 'modal-calendario-estado-medio';
+    if (cantidadCitas >= 5 && cantidadCitas <= 6) return 'modal-calendario-estado-ocupado';
     if (cantidadCitas >= 7) return 'modal-calendario-estado-completo';
-    if (cantidadCitas >= 5) return 'modal-calendario-estado-ocupado';
-    if (cantidadCitas >= 3) return 'modal-calendario-estado-medio';
-    if (cantidadCitas >= 1) return 'modal-calendario-estado-libre';
+    
     return 'modal-calendario-estado-vacio';
   };
 
   const handleDayClick = async (year, month, day) => {
-    try {
-      const fechaSeleccionada = new Date(year, month, day);
-      setSelectedDate(fechaSeleccionada);
-      await cargarCitasDelDia(fechaSeleccionada);
-      setShowCitasDelDia(true);
-    } catch (error) {
-      console.error('❌ Error en handleDayClick:', error);
-    }
-  };
+  try {
+    const fechaSeleccionada = new Date(year, month, day);
+    const hoy = new Date();
+    const hoy00 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    setIsPastSelected(fechaSeleccionada < hoy00);   // <-- nuevo
+
+    setSelectedDate(fechaSeleccionada);
+    await cargarCitasDelDia(fechaSeleccionada);
+    setShowCitasDelDia(true);
+  } catch (error) {
+    console.error('❌ Error en handleDayClick:', error);
+  }
+};
+
 
   const navegarMes = (direccion) => {
     const newDate = new Date(currentDate);
@@ -366,14 +360,12 @@ const CalendarioDinamico = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-calendario-citas-modal-header">
-              <h2>Citas del {formatearFecha(selectedDate)}</h2>
-              <button 
-                onClick={() => setShowCitasDelDia(false)}
-                className="modal-calendario-citas-modal-close-btn"
-              >
-                ×
-              </button>
-            </div>
+  <h2>
+    Citas del {formatearFecha(selectedDate)}
+    {isPastSelected && <span className="modal-calendario-chip-historial">Historial</span>}
+  </h2>
+  <button onClick={() => setShowCitasDelDia(false)} className="modal-calendario-citas-modal-close-btn">×</button>
+</div>
 
             <div className="modal-calendario-citas-modal-body">
               {citasDelDiaSeleccionado.length === 0 ? (
@@ -412,7 +404,6 @@ const CalendarioDinamico = () => {
                         </span>
                       </div>
                       
-                      {/* ✅ SOLUCIÓN: Filtrar observaciones automáticas */}
                       {cita.observaciones && limpiarObservaciones(cita.observaciones) && (
                         <div className="modal-calendario-citas-info-observaciones">
                           <strong>Observaciones:</strong> {limpiarObservaciones(cita.observaciones)}

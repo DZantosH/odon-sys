@@ -4421,3 +4421,106 @@
 }
 
 /* ===== FIN DEL CÓDIGO RESPONSIVE ===== */
+
+/* ==== FIX de layout para que sea 100% responsive ==== */
+
+/* 1) Columnas fluidas: primera (citas) fija flexible, segunda (calendario) ocupa el resto */
+.panels-row {
+  display: grid !important;
+  grid-template-columns: minmax(300px, 380px) 1fr !important;
+  gap: 16px !important;
+}
+
+/* 2) El panel del calendario NO debe forzar ancho mínimo */
+.calendar-panel {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;   /* clave para que el grid pueda encoger */
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* 3) El panel de “Citas de hoy” con ancho razonable y sin forzar altos */
+.citas-panel {
+  flex: 0 0 auto !important;
+  min-width: 280px !important;
+  max-width: 420px !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+/* 4) En pantallas <= 1366px: apilar para evitar huecos */
+@media (max-width: 1366px) {
+  .panels-row {
+    grid-template-columns: 1fr !important;
+  }
+  .citas-panel, .calendar-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* 5) Extra: evita recortes dentro del contenido del calendario */
+.calendar-content, .panel-content {
+  overflow: visible !important;
+}
+/* ===== Cuando el layout se apila, los paneles deben ocupar 100% ===== */
+@media (max-width: 1366px){
+  .panels-row{
+    display: grid !important;
+    grid-template-columns: 1fr !important;  /* una sola columna */
+    gap: 16px !important;
+  }
+
+  /* El panel del calendario y el de citas se estiran al 100% */
+  .calendar-panel,
+  .citas-panel{
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;   /* evita overflow de hijos */
+    flex: 1 1 auto !important;
+  }
+}
+/* ===== Desktop amplio (mayor a 1366px) ===== */
+@media (min-width: 1367px){
+  /* fila de paneles fluida: sidebar a la izquierda, calendario al resto */
+  .panels-row{
+    display: grid !important;
+    grid-template-columns: minmax(340px, 28%) 1fr !important;
+    gap: 20px !important;
+    align-items: start !important;
+  }
+
+  /* Citas de Hoy: sin ancho/alto fijos */
+  .citas-panel{
+    width: auto !important;
+    min-width: 340px !important;
+    max-width: 520px !important; /* si quieres tope visual, opcional */
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-self: start !important;
+  }
+
+  /* Calendario: que ocupe el resto, sin topes */
+  .calendar-panel{
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-self: stretch !important;
+  }
+
+  /* Cuerpo de las tarjetas: que se estire con el contenido */
+  .panel-content{
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: flow-root !important; /* evita colapso de márgenes */
+  }
+}

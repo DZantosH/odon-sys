@@ -1,0 +1,241 @@
+/* Días normales - estilo limpio sin borde */
+.modal-calendario-day {
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;  /* centrado vertical */
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%; /* círculo */
+  border: none;       /* sin borde */
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* Hover suave */
+.modal-calendario-day:hover {
+  background: rgba(0,0,0,0.05);
+}
+
+/* Días vacíos */
+.modal-calendario-empty {
+  background: transparent !important;
+  height: 60px !important;
+  border: none !important;
+  cursor: default !important;
+}
+
+/* Estados de ocupación ahora con fondo circular */
+.modal-calendario-estado-libre {
+  background: #22c55e !important;
+  color: white !important;
+}
+.modal-calendario-estado-medio {
+  background: #eab308 !important;
+  color: white !important;
+}
+.modal-calendario-estado-ocupado {
+  background: #f97316 !important;
+  color: white !important;
+}
+.modal-calendario-estado-completo {
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+/* Día actual destacado */
+.modal-calendario-today {
+  background: #3b82f6 !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Contador dentro del círculo */
+.modal-calendario-citas-count {
+  top: -4px !important;
+  right: -4px !important;
+  border-radius: 50% !important;
+  font-size: 10px !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.modal-calendario-chip-historial{
+  margin-left: 10px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* ==== FIX del grid del calendario para que no deje huecos y sea fluido ==== */
+
+/* El contenedor de celdas no limita altura y se adapta al ancho disponible */
+.modal-calendario-grid-dynamic {
+  max-height: none !important; /* antes era 400px */
+  padding: 8px !important;     /* un poco de aire */
+}
+
+/* Cada día mantiene proporción sin forzar alto fijo */
+.modal-calendario-day {
+  height: auto !important;     /* antes: 60px fijos */
+  aspect-ratio: 1 / 1 !important;
+}
+
+/* En tablets/móviles bajamos la proporción para ganar vertical */
+@media (max-width: 1024px) {
+  .modal-calendario-day {
+    aspect-ratio: auto !important;
+    min-height: 44px !important;
+  }
+}
+.modal-calendario-grid-dynamic{
+  max-height: none !important;   /* quita topes que generaban huecos */
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 28px 0 !important;         /* espacio vertical y 0 horizontal para centrar columnas */
+  padding-left: 0 !important;     /* evita empuje a la izquierda */
+  padding-right: 0 !important;
+  justify-items: center !important; /* centra el contenido en cada celda del grid */
+}
+
+
+.modal-calendario-day.modal-calendario-header{
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 6px 0 !important;
+  height: auto !important;
+  color: #6b7280 !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Cada día (tu circulito) centrado exactamente en su celda */
+.modal-calendario-day{
+  place-self: center !important;     /* centro exacto dentro de la celda */
+  margin: 0 !important;
+  padding: 0 !important;             /* evita desplazamiento visual */
+  width: clamp(38px, 4.2vw, 56px) !important;  /* tamaño fluido del círculo */
+  aspect-ratio: 1 / 1 !important;    /* lo mantiene perfecto */
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* El número del día centrado y sin offsets */
+.modal-calendario-day-number{
+  margin: 0 !important;
+  line-height: 1 !important;
+}
+
+/* En pantallas pequeñas podemos dar un poco más de aire vertical */
+@media (max-width: 900px){
+  .modal-calendario-grid-dynamic{ gap: 20px 0 !important; }
+}
+
+/* ===== Scroll vertical del calendario en pantallas chicas ===== */
+@media (max-width: 900px){
+  /* El contenedor acomoda: header, leyenda y la grilla que scrollea */
+  .modal-calendario-container{
+    display: grid !important;
+    grid-template-rows: auto auto 1fr !important;
+    overflow: hidden !important; /* oculta solo el overflow del wrapper */
+  }
+
+  /* Solo la grilla hace scroll: no se cortan las últimas filas */
+  .modal-calendario-grid-dynamic{
+    max-height: calc(100vh - 320px) !important; /* ajusta si tu header/footer es más alto */
+    overflow-y: auto !important;
+    padding-right: 6px !important; /* deja aire para que no tape el scroll */
+  }
+
+  /* Scrollbar discreto (opcional) */
+  .modal-calendario-grid-dynamic::-webkit-scrollbar{ width: 8px; }
+  .modal-calendario-grid-dynamic::-webkit-scrollbar-thumb{
+    background: #cbd5e1; border-radius: 8px;
+  }
+
+  /* Para que los “días” no queden gigantes al reducirse el ancho */
+  .modal-calendario-day{
+    aspect-ratio: auto !important;
+    min-height: 44px !important;
+  }
+}
+
+.calendar-panel,
+.calendar-panel .panel-content{
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* El panel y su body deben poder crecer libremente */
+.calendar-panel,
+.calendar-panel .panel,
+.calendar-panel .panel-card,
+.calendar-panel .panel-content,
+.calendar-panel .card,
+.calendar-panel .card-body {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;      /* que no recorte el contenido */
+  display: block !important;
+}
+
+/* Evita “colapso de márgenes” que hace que el fondo no se alargue */
+.calendar-panel .panel-content {
+  display: flow-root !important;     /* crea BFC: el fondo envuelve a los hijos */
+}
+
+
+/* Tu contenedor del calendario */
+.modal-calendario-container{
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* La grilla: sin topes, que determine la altura final del panel */
+.modal-calendario-grid-dynamic{
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 16px;              /* para que el fondo no “corte” al final */
+}
+
+@media (max-width: 900px){
+  .modal-calendario-container{
+    overflow: visible !important;    /* el fondo debe alargarse */
+  }
+  /* si quieres mantener scroll solo en la grilla, ok, pero quita max-height del wrapper */
+  .modal-calendario-grid-dynamic{
+    max-height: none !important;     /* o usa la fórmula que te pasé si quieres scroll */
+  }
+}
+
+.modal-calendario-grid-dynamic{
+  grid-template-columns: repeat(7, minmax(0,1fr)) !important;
+  justify-items: center !important;
+}
+.modal-calendario-day{
+  place-self: center !important;
+  width: clamp(36px, 4vw, 56px) !important;
+  aspect-ratio: 1/1 !important;
+}
+

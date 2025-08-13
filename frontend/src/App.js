@@ -2,12 +2,14 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { AuthProvider, useAuth } from './services/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext'; // ✅ NUEVO: Proveedor de tema
 import Layout from './components/Layout';
-import HorarioBloqueo from './pages/HorarioBloqueo'; // 🆕 Ahora es una página
+import HorarioBloqueo from './pages/HorarioBloqueo';
 import Login from './pages/Login';
 import PanelPrincipal from './pages/PanelPrincipal';
 import Pacientes from './pages/Pacientes';
 import Citas from './pages/Citas';
+import Configuracion from './pages/Configuracion'; // ✅ NUEVO: Página de configuración
 import HistorialClinico from './historial/HistorialClinico';
 import HistorialPacienteIndividual from './historial/HistorialPaciente/HistorialPacienteIndividual';
 import ManualUsuario from './ManualUsuario/ManualUsuario';
@@ -101,6 +103,9 @@ const AppContent = () => {
           <Route path="pacientes/:pacienteId/historial" element={<HistorialPacienteIndividual />} />
           
           <Route path="citas" element={<Citas />} />
+          
+          {/* ⚙️ NUEVA RUTA: Configuración de usuario */}
+          <Route path="configuracion" element={<Configuracion />} />
         </Route>
         
         {/* 📋 RUTA: Historial clínico (FUERA del Layout protegido) - Con control de horario */}
@@ -133,18 +138,21 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <>
-        <AppContent />
-        <ToastContainer 
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop={true}
-          closeOnClick
-          pauseOnHover
-          theme="colored"
-        />
-      </>
+      <ThemeProvider> {/* ✅ NUEVO: Envolver con ThemeProvider */}
+        <>
+          <AppContent />
+          <ToastContainer 
+            position="top-right"
+            autoClose={4000}
+            hideProgressBar={false}
+            newestOnTop={true}
+            closeOnClick
+            pauseOnHover
+            theme="colored"
+            className="toast-container"
+          />
+        </>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

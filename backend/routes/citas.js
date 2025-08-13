@@ -4,6 +4,64 @@ const { verifyToken } = require('../middleware/auth');
 const { pool } = require('../config/database');
 const router = express.Router();
 
+  /**
+ * Función para obtener horarios de trabajo desde la base de datos
+ * @param {Object} pool - Pool de conexiones MySQL
+ * @returns {Array} Array de horarios en formato HH:MM
+ */
+const obtenerHorariosTrabajo = async (pool) => {
+  try {
+    console.log('⏰ [HORARIOS-BD] Obteniendo horarios desde base de datos...');
+    
+    // Obtener configuración de horarios de la BD
+    const [config] = await pool.execute(`
+      SELECT clave, valor 
+      FROM configuracion_admin 
+      WHERE seccion = 'horarios' 
+      AND clave IN ('hora_apertura', 'hora_cierre')
+    `);
+
+    const horaApertura = config.find(c => c.clave === 'hora_apertura')?.valor || '11:00';
+    const horaCierre = config.find(c => c.clave === 'hora_cierre')?.valor || '19:30';
+
+    console.log(`⏰ [HORARIOS-BD] Horarios configurados: ${horaApertura} - ${horaCierre}`);
+
+    // Generar horarios cada 30 minutos
+    const horarios = [];
+    const [horaIni, minIni] = horaApertura.split(':').map(Number);
+    const [horaFin, minFin] = horaCierre.split(':').map(Number);
+
+    let hora = horaIni;
+    let minuto = minIni;
+
+    while (hora < horaFin || (hora === horaFin && minuto <= minFin)) {
+      horarios.push(`${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`);
+      
+      minuto += 30;
+      if (minuto >= 60) {
+        minuto = 0;
+        hora++;
+      }
+    }
+
+    console.log(`✅ [HORARIOS-BD] ${horarios.length} horarios generados:`, horarios);
+    return horarios;
+    
+  } catch (error) {
+    console.error('❌ [HORARIOS-BD] Error al obtener horarios de BD:', error);
+    
+    // Fallback a horarios predefinidos si falla la BD
+    const horariosFallback = [
+      '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+      '17:00', '17:30', '18:00', '18:30', '19:00', '19:30'
+    ];
+    
+    console.log('🔄 [HORARIOS-BD] Usando horarios fallback:', horariosFallback.length);
+    return horariosFallback;
+  }
+};
+
 // ✅ VERIFICAR QUE POOL ESTÉ DISPONIBLE AL CARGAR EL MÓDULO
 console.log('🔌 [CITAS] Verificando conexión pool:', pool ? '✅ Disponible' : '❌ No disponible');
 
@@ -1084,6 +1142,465 @@ router.put('/:id', verifyToken, verifyAccess, verifyPool, [
   }
 });
 
-console.log('🚀 [CITAS] Módulo de citas cargado correctamente con pool verificado');
+// ===== AGREGAR ESTOS ENDPOINTS AL FINAL DE TU ARCHIVO citas.js =====
 
+// 📅 ENDPOINT 1: OBTENER HORARIOS DISPONIBLES PARA REAGENDAR
+router.get('/:id/horarios-disponibles', verifyToken, verifyAccess, verifyPool, async (req, res) => {
+  try {
+    const citaId = req.params.id;
+    const { fecha } = req.query;
+    
+    console.log(`⏰ [HORARIOS] Obteniendo horarios disponibles para cita ${citaId} en fecha ${fecha}`);
+    
+    if (!fecha) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha es requerida'
+      });
+    }
+
+    // Validar formato de fecha
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    if (isNaN(fechaObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Formato de fecha inválido'
+      });
+    }
+
+    // No permitir fechas pasadas
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaObj < hoy) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se pueden agendar citas en fechas pasadas',
+        horarios: []
+      });
+    }
+
+    // Obtener información de la cita
+    const [cita] = await pool.execute(
+      'SELECT doctor_id, fecha_cita, hora_cita FROM citas WHERE id = ?',
+      [citaId]
+    );
+
+    if (cita.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
+    }
+
+    // Obtener horarios ocupados excluyendo la cita actual
+    const [horariosOcupados] = await pool.execute(`
+      SELECT hora_cita 
+      FROM citas 
+      WHERE fecha_cita = ? 
+      AND doctor_id = ?
+      AND estado NOT IN ('Cancelada', 'No_Asistio')
+      AND id != ?
+    `, [fecha, cita[0].doctor_id, citaId]);
+
+    console.log(`📋 [HORARIOS] Horarios ocupados encontrados:`, horariosOcupados.length);
+
+    const horasOcupadas = horariosOcupados
+      .map(row => {
+        if (row.hora_cita) {
+          return row.hora_cita.length === 8 ? row.hora_cita.slice(0, 5) : row.hora_cita;
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    console.log(`⏰ [HORARIOS] Horas ocupadas procesadas:`, horasOcupadas);
+
+    // 🔧 CAMBIO: Obtener horarios desde BD
+    const HORARIOS_TRABAJO = await obtenerHorariosTrabajo(pool);
+
+    // Filtrar horarios disponibles
+    let horariosDisponibles = HORARIOS_TRABAJO.filter(horario => 
+      !horasOcupadas.includes(horario)
+    );
+
+    // Si es hoy, filtrar horarios que ya pasaron
+    if (fechaObj.toDateString() === hoy.toDateString()) {
+      const ahora = new Date();
+      const horaActual = ahora.getHours();
+      const minutoActual = ahora.getMinutes();
+      
+      horariosDisponibles = horariosDisponibles.filter(horario => {
+        const [hora, minuto] = horario.split(':').map(Number);
+        const horarioMinutos = hora * 60 + minuto;
+        const actualMinutos = horaActual * 60 + minutoActual + 30; // 30 min de anticipación
+        
+        return horarioMinutos >= actualMinutos;
+      });
+      
+      console.log(`🕐 [HORARIOS] Filtrado por hora actual, quedan: ${horariosDisponibles.length}`);
+    }
+
+    console.log(`✅ [HORARIOS] Horarios disponibles finales:`, horariosDisponibles.length);
+
+    res.json({
+      success: true,
+      fecha: fecha,
+      horarios: horariosDisponibles,
+      total_disponibles: horariosDisponibles.length,
+      cita_actual: {
+        fecha: cita[0].fecha_cita,
+        hora: cita[0].hora_cita
+      },
+      debug: {
+        horas_ocupadas: horasOcupadas,
+        doctor_id: cita[0].doctor_id,
+        horarios_configurados: HORARIOS_TRABAJO.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [HORARIOS] Error al obtener horarios:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener horarios disponibles',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  }
+});
+
+// 🔄 REAGENDAR CITA ESPECÍFICA
+router.put('/:id/reagendar', verifyToken, verifyAccess, verifyPool, [
+  body('nueva_fecha').isDate().withMessage('Nueva fecha válida requerida'),
+  body('nueva_hora').matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Nueva hora válida requerida')
+], async (req, res) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    const citaId = req.params.id;
+    const { nueva_fecha, nueva_hora, observaciones } = req.body;
+    
+    console.log(`🔄 [REAGENDAR] Reagendando cita ${citaId}:`, { nueva_fecha, nueva_hora });
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        success: false,
+        errors: errors.array(),
+        message: 'Datos de entrada inválidos'
+      });
+    }
+
+    // 1. Verificar que la cita existe
+    const [citaExistente] = await connection.execute(
+      'SELECT * FROM citas WHERE id = ?',
+      [citaId]
+    );
+
+    if (citaExistente.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cita no encontrada'
+      });
+    }
+
+    const cita = citaExistente[0];
+
+    // 2. Verificar que el nuevo horario esté disponible
+    const [conflictos] = await connection.execute(`
+      SELECT id, nombre_paciente 
+      FROM citas 
+      WHERE fecha_cita = ? 
+      AND hora_cita = ? 
+      AND doctor_id = ?
+      AND estado NOT IN ('Cancelada', 'No_Asistio')
+      AND id != ?
+    `, [nueva_fecha, nueva_hora, cita.doctor_id, citaId]);
+
+    if (conflictos.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'El horario seleccionado ya está ocupado',
+        conflicto: conflictos[0]
+      });
+    }
+
+    // 3. Preparar observaciones actualizadas
+    const fechaOriginal = cita.fecha_cita;
+    const horaOriginal = cita.hora_cita;
+    const fechaReagendar = new Date().toLocaleString('es-MX');
+    
+    const nuevasObservaciones = [
+      cita.observaciones || '',
+      `\n[REAGENDADA ${fechaReagendar}]: Movida de ${fechaOriginal} ${horaOriginal} a ${nueva_fecha} ${nueva_hora}`,
+      observaciones ? `Motivo: ${observaciones}` : ''
+    ].filter(Boolean).join('\n').trim();
+
+    // 4. Actualizar la cita
+    const [result] = await connection.execute(`
+      UPDATE citas 
+      SET fecha_cita = ?,
+          hora_cita = ?,
+          estado = 'Programada',
+          observaciones = ?,
+          fecha_actualizacion = NOW()
+      WHERE id = ?
+    `, [nueva_fecha, nueva_hora, nuevasObservaciones, citaId]);
+
+    if (result.affectedRows === 0) {
+      throw new Error('No se pudo actualizar la cita');
+    }
+
+    // 5. Registrar en el log de citas (si la tabla existe)
+    try {
+      await connection.execute(`
+        INSERT INTO citas_logs (cita_id, accion, detalle, fecha_log)
+        VALUES (?, 'REAGENDADA', ?, NOW())
+      `, [
+        citaId,
+        `Cita reagendada de ${fechaOriginal} ${horaOriginal} a ${nueva_fecha} ${nueva_hora}`
+      ]);
+    } catch (logError) {
+      console.log('ℹ️ [REAGENDAR] No se pudo registrar en citas_logs (tabla no existe)');
+    }
+
+    // 6. Obtener la cita actualizada con datos completos
+    const [citaActualizada] = await connection.execute(`
+      SELECT 
+        c.*,
+        COALESCE(
+          CONCAT(p.nombre, ' ', p.apellido_paterno, ' ', COALESCE(p.apellido_materno, '')),
+          c.nombre_paciente
+        ) as paciente_nombre_completo,
+        p.telefono as paciente_telefono,
+        tc.nombre as tipo_consulta_nombre,
+        tc.precio as precio_consulta,
+        CONCAT(u.nombre, ' ', u.apellido_paterno) as doctor_nombre_completo
+      FROM citas c
+      LEFT JOIN pacientes p ON c.paciente_id = p.id
+      LEFT JOIN tipos_consulta tc ON c.tipo_consulta_id = tc.id
+      LEFT JOIN usuarios u ON c.doctor_id = u.id
+      WHERE c.id = ?
+    `, [citaId]);
+
+    await connection.commit();
+
+    console.log('✅ [REAGENDAR] Cita reagendada exitosamente:', citaActualizada[0].id);
+
+    res.json({
+      success: true,
+      message: 'Cita reagendada exitosamente',
+      cita: citaActualizada[0],
+      cambios: {
+        fecha_anterior: fechaOriginal,
+        hora_anterior: horaOriginal,
+        fecha_nueva: nueva_fecha,
+        hora_nueva: nueva_hora
+      }
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('❌ [REAGENDAR] Error al reagendar cita:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error al reagendar la cita',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  } finally {
+    connection.release();
+  }
+});
+
+// 📅 ENDPOINT 2: HORARIOS DISPONIBLES GENERAL
+router.get('/horarios/disponibles', verifyToken, verifyAccess, verifyPool, async (req, res) => {
+  try {
+    const { fecha, doctor_id = null } = req.query;
+    
+    console.log(`⏰ [HORARIOS-GENERAL] Obteniendo horarios para fecha: ${fecha}, doctor: ${doctor_id}`);
+    
+    if (!fecha) {
+      return res.status(400).json({
+        success: false,
+        message: 'La fecha es requerida'
+      });
+    }
+
+    // Validar formato de fecha
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    if (isNaN(fechaObj.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Formato de fecha inválido'
+      });
+    }
+
+    // No permitir fechas pasadas
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    if (fechaObj < hoy) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se pueden consultar horarios de fechas pasadas',
+        horarios: []
+      });
+    }
+
+    // Obtener horarios ocupados
+    let query = `
+      SELECT hora_cita 
+      FROM citas 
+      WHERE fecha_cita = ? 
+      AND estado NOT IN ('Cancelada', 'No_Asistio')
+    `;
+    
+    let params = [fecha];
+    
+    // Si se especifica doctor, filtrar por doctor
+    if (doctor_id) {
+      query += ' AND doctor_id = ?';
+      params.push(doctor_id);
+    }
+
+    const [horariosOcupados] = await pool.execute(query, params);
+    
+    console.log(`📋 [HORARIOS-GENERAL] Horarios ocupados encontrados:`, horariosOcupados.length);
+
+    // Extraer solo las horas ocupadas
+    const horasOcupadas = horariosOcupados.map(row => {
+      if (row.hora_cita) {
+        return row.hora_cita.length === 8 ? row.hora_cita.slice(0, 5) : row.hora_cita;
+      }
+      return null;
+    }).filter(Boolean);
+
+    console.log(`⏰ [HORARIOS-GENERAL] Horas ocupadas procesadas:`, horasOcupadas);
+
+    // 🔧 CAMBIO: Obtener horarios desde BD
+    const HORARIOS_TRABAJO = await obtenerHorariosTrabajo(pool);
+
+    // Filtrar horarios disponibles
+    let horariosDisponibles = HORARIOS_TRABAJO.filter(horario => 
+      !horasOcupadas.includes(horario)
+    );
+
+    // Si es hoy, filtrar horarios que ya pasaron
+    if (fechaObj.toDateString() === hoy.toDateString()) {
+      const ahora = new Date();
+      const horaActual = ahora.getHours();
+      const minutoActual = ahora.getMinutes();
+      
+      horariosDisponibles = horariosDisponibles.filter(horario => {
+        const [hora, minuto] = horario.split(':').map(Number);
+        const horarioMinutos = hora * 60 + minuto;
+        const actualMinutos = horaActual * 60 + minutoActual + 30; // 30 min de anticipación
+        
+        return horarioMinutos >= actualMinutos;
+      });
+      
+      console.log(`🕐 [HORARIOS-GENERAL] Filtrado por hora actual, quedan: ${horariosDisponibles.length}`);
+    }
+
+    console.log(`✅ [HORARIOS-GENERAL] Horarios disponibles finales:`, horariosDisponibles.length);
+
+    res.json({
+      success: true,
+      fecha: fecha,
+      total_disponibles: horariosDisponibles.length,
+      horarios: horariosDisponibles,
+      horarios_ocupados: horasOcupadas,
+      configuracion: {
+        total_horarios_sistema: HORARIOS_TRABAJO.length,
+        horarios_sistema: HORARIOS_TRABAJO
+      },
+      message: horariosDisponibles.length > 0 
+        ? `${horariosDisponibles.length} horarios disponibles`
+        : 'No hay horarios disponibles para esta fecha'
+    });
+
+  } catch (error) {
+    console.error('❌ [HORARIOS-GENERAL] Error al obtener horarios disponibles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  }
+});
+
+// 📅 OBTENER HORARIOS DE TRABAJO CONFIGURADOS
+router.get('/horarios/trabajo', verifyToken, verifyAccess, verifyPool, async (req, res) => {
+  try {
+    console.log('⚙️ [HORARIOS-TRABAJO] Obteniendo configuración de horarios...');
+    
+    // Obtener configuración de la BD
+    const [config] = await pool.execute(`
+      SELECT clave, valor 
+      FROM configuracion_admin 
+      WHERE seccion = 'horarios' 
+      AND clave IN ('hora_apertura', 'hora_cierre')
+    `);
+
+    const horaApertura = config.find(c => c.clave === 'hora_apertura')?.valor || '08:30';
+    const horaCierre = config.find(c => c.clave === 'hora_cierre')?.valor || '20:00';
+
+    // Generar horarios cada 30 minutos
+    const horarios = [];
+    const [horaIni, minIni] = horaApertura.split(':').map(Number);
+    const [horaFin, minFin] = horaCierre.split(':').map(Number);
+
+    let hora = horaIni;
+    let minuto = minIni;
+
+    while (hora < horaFin || (hora === horaFin && minuto <= minFin)) {
+      horarios.push(`${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`);
+      
+      minuto += 30;
+      if (minuto >= 60) {
+        minuto = 0;
+        hora++;
+      }
+    }
+
+    console.log(`✅ [HORARIOS-TRABAJO] Enviando ${horarios.length} horarios configurados`);
+
+    res.json({
+      success: true,
+      horarios: horarios,
+      configuracion: {
+        hora_apertura: horaApertura,
+        hora_cierre: horaCierre,
+        total_horarios: horarios.length
+      },
+      message: `${horarios.length} horarios disponibles desde ${horaApertura} hasta ${horaCierre}`
+    });
+
+  } catch (error) {
+    console.error('❌ [HORARIOS-TRABAJO] Error:', error);
+    
+    // Fallback con horarios extendidos
+    const horariosFallback = [
+      '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+      '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00',
+      '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+      '19:00', '19:30', '20:00'
+    ];
+    
+    res.json({
+      success: true,
+      horarios: horariosFallback,
+      configuracion: {
+        hora_apertura: '08:30',
+        hora_cierre: '20:00',
+        total_horarios: horariosFallback.length
+      },
+      message: 'Horarios fallback cargados',
+      fallback: true
+    });
+  }
+});
+
+console.log('✅ [CITAS] Endpoints de reagendar y horarios agregados correctamente');
 module.exports = router;

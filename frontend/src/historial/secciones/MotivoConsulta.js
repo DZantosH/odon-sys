@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const MotivoConsulta = ({ datos: externalFormData, onChange: externalHandleChange, errores = {} }) => {
   // Estado local si no se pasan props externas

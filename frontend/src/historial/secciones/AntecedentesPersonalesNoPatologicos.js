@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const AntecedentesPersonalesNoPatologicos = ({ 
   datos: externalData, 

@@ -1,4 +1,5 @@
 import React from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const FichaIdentificacion = ({ datos, errores, onChange }) => {
   return (

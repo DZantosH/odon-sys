@@ -379,6 +379,13 @@ const EstudiosLaboratorioSection = ({
   }, []);
 
   useEffect(() => {
+    console.log('🔍 useEffect disparado:', {
+      submitLoading,
+      estudiosLength: estudiosLaboratorio.length,
+      conteoEstudiosInicial,
+      tipoEstudio: formNuevoEstudio.tipo_estudio
+    });
+
     if (submitLoading && estudiosLaboratorio.length > conteoEstudiosInicial) {
       console.log('🎉 ¡Nuevo estudio detectado! Cerrando formulario automáticamente');
       console.log(`📊 Estudios: ${conteoEstudiosInicial} → ${estudiosLaboratorio.length}`);
@@ -402,7 +409,16 @@ const EstudiosLaboratorioSection = ({
       
       setConteoEstudiosInicial(0);
     }
-  }, [estudiosLaboratorio.length, submitLoading, conteoEstudiosInicial, formNuevoEstudio.tipo_estudio]);
+    // Timeout de seguridad para evitar que se quede cargando indefinidamente
+    else if (submitLoading) {
+      const timeout = setTimeout(() => {
+        console.log('⏰ Timeout de seguridad: deteniendo loading');
+        setSubmitLoading(false);
+      }, 10000); // 10 segundos timeout
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [estudiosLaboratorio.length, submitLoading, conteoEstudiosInicial]);
 
   const handleSolicitarNuevo = async () => {
     try {

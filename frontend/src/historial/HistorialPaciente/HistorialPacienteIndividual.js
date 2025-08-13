@@ -367,37 +367,51 @@ useEffect(() => {
     }
   }, [pacienteId, getAuthHeaders]);
 
-  // Función para cargar estudios de laboratorio
-  const cargarEstudiosLaboratorio = useCallback(async () => {
-    try {
-      setLoadingEstudios(true);
-      console.log('🔬 Cargando estudios de laboratorio para paciente:', pacienteId);
+  // Función para cargar estudios de laboratorio (CORREGIDA)
+const cargarEstudiosLaboratorio = useCallback(async () => {
+  try {
+    setLoadingEstudios(true);
+    console.log('🔬 Cargando estudios de laboratorio para paciente:', pacienteId);
+    
+    const response = await fetch(buildApiUrl(`/estudios-laboratorio/paciente/${pacienteId}`), {
+      headers: getAuthHeaders()
+    });
+    
+    console.log('📡 Respuesta API estudios:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('📊 Respuesta completa de estudios:', data);
       
-      const response = await fetch(buildApiUrl(`/estudios-laboratorio/paciente/${pacienteId}`), {
-        headers: getAuthHeaders()
-      });
+      // Manejar tanto formato nuevo como viejo
+      const estudiosData = data.success ? data.data : data;
       
-      if (response.ok) {
-        const data = await response.json();
-        const estudiosOrdenados = data.sort((a, b) => 
+      if (Array.isArray(estudiosData)) {
+        const estudiosOrdenados = estudiosData.sort((a, b) => 
           new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud)
         );
         setEstudiosLaboratorio(estudiosOrdenados);
-        console.log('✅ Estudios cargados desde API:', estudiosOrdenados.length);
-      } else if (response.status === 404) {
-        console.log('ℹ️ No hay estudios de laboratorio para este paciente');
-        setEstudiosLaboratorio([]);
+        console.log('✅ Estudios cargados exitosamente:', estudiosOrdenados.length);
       } else {
-        console.warn('⚠️ Error al cargar estudios:', response.status);
+        console.warn('⚠️ Formato de respuesta inesperado:', data);
         setEstudiosLaboratorio([]);
       }
-    } catch (error) {
-      console.error('❌ Error al cargar estudios:', error);
+    } else if (response.status === 404) {
+      console.log('ℹ️ No hay estudios de laboratorio para este paciente');
       setEstudiosLaboratorio([]);
-    } finally {
-      setLoadingEstudios(false);
+    } else {
+      console.warn('⚠️ Error al cargar estudios:', response.status);
+      const errorData = await response.json().catch(() => ({}));
+      console.warn('❌ Detalle del error:', errorData);
+      setEstudiosLaboratorio([]);
     }
-  }, [pacienteId, getAuthHeaders]);
+  } catch (error) {
+    console.error('❌ Error al cargar estudios:', error);
+    setEstudiosLaboratorio([]);
+  } finally {
+    setLoadingEstudios(false);
+  }
+}, [pacienteId, getAuthHeaders]);
 
   // Función para cargar citas del historial
   const cargarCitasHistorial = useCallback(async () => {
@@ -1041,87 +1055,97 @@ useEffect(() => {
     );
   };
 
-  // Función para solicitar nuevo estudio
-  const solicitarNuevoEstudio = useCallback(async (formData) => {
-    try {
-      setSubmitLoading(true);
-      
-      if (!formData.tipo_estudio.trim()) {
-        throw new Error('El tipo de estudio es requerido');
-      }
-
-      if (!pacienteId) {
-        throw new Error('ID de paciente no válido');
-      }
-
-      if (!user?.id) {
-        throw new Error('Usuario no autenticado');
-      }
-
-      const response = await fetch(buildApiUrl('/estudios-laboratorio'), {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          ...formData,
-          paciente_id: parseInt(pacienteId),
-          doctor_id: user.id,
-          fecha_solicitud: new Date().toISOString().split('T')[0],
-          estado: 'pendiente'
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`);
-      }
-
-      const nuevoEstudio = await response.json();
-      console.log('✅ Estudio solicitado exitosamente:', nuevoEstudio);
-
-      await cargarEstudiosLaboratorio();
-
-      if (mostrarConfirmacion) {
-        await mostrarConfirmacion({
-          type: 'success',
-          title: '¡Estudio Solicitado!',
-          message: `El estudio "${nuevoEstudio.tipo_estudio}" ha sido solicitado exitosamente para el paciente.`,
-          details: {
-            tipo_estudio: nuevoEstudio.tipo_estudio,
-            laboratorio: formData.laboratorio_recomendado || 'No especificado',
-            urgencia: formData.urgencia,
-            fecha: new Date().toLocaleDateString('es-MX', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-            estado: 'Pendiente'
-          },
-          confirmText: 'Aceptar',
-          cancelText: 'Ver Detalles',
-          showCancel: true
-        });
-      }
-
-      return true;
-
-    } catch (error) {
-      console.error('❌ Error al solicitar estudio:', error);
-      
-      if (mostrarConfirmacion) {
-        await mostrarConfirmacion({
-          type: 'error',
-          title: '❌ Error al Solicitar Estudio',
-          message: error.message,
-          confirmText: 'Entendido',
-          showCancel: false
-        });
-      }
-
-      return false;
-    } finally {
-      setSubmitLoading(false);
+// Función para solicitar nuevo estudio (ACTUALIZADA)
+const solicitarNuevoEstudio = useCallback(async (formData) => {
+  try {
+    setSubmitLoading(true);
+    
+    if (!formData.tipo_estudio.trim()) {
+      throw new Error('El tipo de estudio es requerido');
     }
-  }, [pacienteId, user?.id, getAuthHeaders, cargarEstudiosLaboratorio, mostrarConfirmacion]);
+
+    if (!pacienteId) {
+      throw new Error('ID de paciente no válido');
+    }
+
+    if (!user?.id) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    console.log('📝 Enviando solicitud de estudio:', {
+      ...formData,
+      paciente_id: parseInt(pacienteId),
+      doctor_id: user.id
+    });
+
+    const response = await fetch(buildApiUrl('/estudios-laboratorio'), {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        ...formData,
+        paciente_id: parseInt(pacienteId),
+        doctor_id: user.id,
+        fecha_solicitud: new Date().toISOString().split('T')[0],
+        estado: 'solicitado'
+      })
+    });
+
+    console.log('📡 Respuesta del servidor:', response.status);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error del servidor:', errorData);
+      throw new Error(errorData.message || errorData.error || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    const resultado = await response.json();
+    console.log('✅ Estudio solicitado exitosamente:', resultado);
+
+    // Recargar estudios inmediatamente
+    await cargarEstudiosLaboratorio();
+
+    if (mostrarConfirmacion) {
+      await mostrarConfirmacion({
+        type: 'success',
+        title: '¡Estudio Solicitado!',
+        message: `El estudio "${resultado.data?.tipo_estudio || formData.tipo_estudio}" ha sido solicitado exitosamente para el paciente.`,
+        details: {
+          tipo_estudio: resultado.data?.tipo_estudio || formData.tipo_estudio,
+          laboratorio: formData.laboratorio_recomendado || 'No especificado',
+          urgencia: formData.urgencia,
+          fecha: new Date().toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          estado: 'Solicitado'
+        },
+        confirmText: 'Aceptar',
+        cancelText: 'Ver Detalles',
+        showCancel: true
+      });
+    }
+
+    return true;
+
+  } catch (error) {
+    console.error('❌ Error al solicitar estudio:', error);
+    
+    if (mostrarConfirmacion) {
+      await mostrarConfirmacion({
+        type: 'error',
+        title: '❌ Error al Solicitar Estudio',
+        message: error.message,
+        confirmText: 'Entendido',
+        showCancel: false
+      });
+    }
+
+    return false;
+  } finally {
+    setSubmitLoading(false);
+  }
+}, [pacienteId, user?.id, getAuthHeaders, cargarEstudiosLaboratorio, mostrarConfirmacion]);
 
   // Función para actualizar estado de citas
   const actualizarEstadoCita = useCallback(async (citaId, nuevoEstado) => {
@@ -2382,9 +2406,10 @@ const renderContenidoHistorialOriginal = () => {
       case 'estudios':
         return (
           <EstudiosLaboratorioSection
-            estudios={estudiosLaboratorio}
+            estudiosLaboratorio={estudiosLaboratorio}  // ✅ CORREGIDO: nombre correcto de la prop
             loadingEstudios={loadingEstudios}
             onSolicitarNuevo={solicitarNuevoEstudio}
+            onRecargar={cargarEstudiosLaboratorio}    // ✅ AGREGADO: función para recargar
             formatearFecha={formatearFecha}
             buildApiUrl={buildApiUrl}
             getAuthHeaders={getAuthHeaders}

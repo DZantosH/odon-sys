@@ -6,7 +6,6 @@ const { pool, testConnection } = require('./config/database');
 require('dotenv').config();
 const { verifyToken } = require('./middleware/auth');
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -136,8 +135,6 @@ app.options('/api/uploads/estudios/:filename', (req, res) => {
   res.sendStatus(200);
 });
 
-// En server.js, agregar DESPUÉS del endpoint de estudios:
-
 // ===== ENDPOINT PROTEGIDO PARA ARCHIVOS DE RADIOGRAFÍAS =====
 app.get('/api/uploads/radiografias/:filename', verifyToken, (req, res) => {
   try {
@@ -237,7 +234,6 @@ app.options('/api/uploads/radiografias/:filename', (req, res) => {
   res.header('Access-Control-Allow-Credentials', 'true');
   res.sendStatus(200);
 });
-
 
 // ========== MIDDLEWARE PRINCIPAL ==========
 app.use(cors({
@@ -362,8 +358,6 @@ app.get('/uploads/:tipo/:filename', (req, res) => {
     res.sendFile(filePath);
 });
 
-
-
 // Middleware específico para avatars con logging
 app.use('/uploads/avatars', (req, res, next) => {
     next();
@@ -435,9 +429,12 @@ app.use((req, res, next) => {
         try {
             const bodyStr = JSON.stringify(req.body);
             if (bodyStr.length < 500) {
+                // Body pequeño, se puede logear
             } else {
+                // Body grande, no logear
             }
         } catch (e) {
+            // Error parseando body
         }
     }
     
@@ -480,32 +477,54 @@ const authRoutes = require('./routes/auth');
 const usuariosRoutes = require('./routes/usuarios');
 const pacientesRoutes = require('./routes/pacientes');
 const citasRoutes = require('./routes/citas');
-const tiposConsultaRoutes = require('./routes/tiposConsulta'); // ← Verificar esta línea
+const tiposConsultaRoutes = require('./routes/tiposConsulta');
 const radiografiasRoutes = require('./routes/radiografias');
 const consultasRoutes = require('./routes/consultas');
 const estudiosLaboratorioRoutes = require('./routes/estudios-laboratorio');
 const historialRoutes = require('./routes/historial');
 const consultasActualesRoutes = require('./routes/consultas-actuales');
 const odontogramaRoutes = require('./routes/odontograma');
+const adminRoutes = require('./routes/admin');
 
+// *** 💰 NUEVA IMPORTACIÓN: RUTAS DE FINANZAS ***
+const finanzasRoutes = require('./routes/finanzas');
 
-console.log('  • /api/tipos-consulta'); // ← Esta debe aparecer
+console.log('🚀 Endpoints de API cargados:');
+console.log('  • /api/auth');
+console.log('  • /api/usuarios');
+console.log('  • /api/pacientes');
+console.log('  • /api/citas');
+console.log('  • /api/tipos-consulta');
+console.log('  • /api/radiografias');
+console.log('  • /api/consultas');
+console.log('  • /api/estudios-laboratorio');
+console.log('  • /api/historial');
+console.log('  • /api/consultas-actuales');
+console.log('  • /api/odontograma');
+console.log('  • /api/admin');
+console.log('  • 💰 /api/finanzas (NUEVO)'); // *** NUEVO LOG ***
 
 // ========== CONFIGURAR RUTAS ==========
 // ⚠️ IMPORTANTE: LOGIN SIN RESTRICCIÓN DE HORARIO
 app.use('/api/auth', authRoutes);
 
-// ✅ RUTAS CON RESTRICCIÓN DE HORARIO
+// ✅ RUTAS CON RESTRICCIÓN DE HORARIO (Sistema clínico)
 app.use('/api/usuarios', verificarHorarioAcceso, usuariosRoutes);
 app.use('/api/pacientes', verificarHorarioAcceso, pacientesRoutes);
 app.use('/api/citas', verificarHorarioAcceso, citasRoutes);
-app.use('/api/tipos-consulta', verificarHorarioAcceso, tiposConsultaRoutes); // ← Verificar esta línea
+app.use('/api/tipos-consulta', verificarHorarioAcceso, tiposConsultaRoutes);
 app.use('/api/radiografias', verificarHorarioAcceso, radiografiasRoutes);
 app.use('/api/consultas', verificarHorarioAcceso, consultasRoutes);
 app.use('/api/estudios-laboratorio', verificarHorarioAcceso, estudiosLaboratorioRoutes);
 app.use('/api/consultas-actuales', verificarHorarioAcceso, consultasActualesRoutes);
 app.use('/api/odontograma', verificarHorarioAcceso, odontogramaRoutes);
 app.use('/api/historial', historialRoutes);
+
+// ✅ RUTAS DEL PANEL ADMINISTRATIVO (SIN restricción de horario)
+app.use('/api/admin', adminRoutes);
+
+// *** 💰 NUEVA RUTA: FINANZAS (SIN restricción de horario) ***
+app.use('/api/finanzas', finanzasRoutes);
 
 // ========== ENDPOINTS DE DEBUG SIN RESTRICCIÓN ==========
 app.all('/api/debug', (req, res) => {
@@ -535,15 +554,12 @@ app.post('/api/test-json', (req, res) => {
     });
 });
 
-
-
-
 // ========== RUTAS DE PRUEBA SIN RESTRICCIÓN ==========
 app.get('/api/test', (req, res) => {
     res.json({ 
         message: 'API funcionando correctamente', 
         timestamp: new Date().toISOString(),
-        version: '1.1.0',
+        version: '1.2.0', // *** Incrementado para incluir finanzas ***
         horario_sistema: {
             activo: true,
             restriccion: '00:00-08:00 solo administradores',
@@ -564,7 +580,8 @@ app.get('/api/test', (req, res) => {
             avatarUpload: true,
             fileUpload: true,
             staticFiles: true,
-            horarioControl: true // 🆕 NUEVO
+            horarioControl: true,
+            finanzas: true // *** NUEVA CARACTERÍSTICA ***
         },
         capabilities: {
             uploads_enabled: true,
@@ -580,13 +597,37 @@ app.get('/api/test', (req, res) => {
             json_validation: true,
             avatar_management: true,
             file_cache: true,
-            schedule_control: true // 🆕 NUEVO
+            schedule_control: true,
+            financial_management: true, // *** NUEVA CAPACIDAD ***
+            transaction_tracking: true, // *** NUEVA CAPACIDAD ***
+            financial_reports: true // *** NUEVA CAPACIDAD ***
+        },
+        // *** NUEVA SECCIÓN: INFORMACIÓN DE FINANZAS ***
+        financial_module: {
+            enabled: true,
+            endpoints: [
+                'GET /api/finanzas/transacciones',
+                'POST /api/finanzas/transacciones',
+                'PUT /api/finanzas/transacciones/:id',
+                'DELETE /api/finanzas/transacciones/:id',
+                'GET /api/finanzas/estadisticas',
+                'GET /api/finanzas/categorias',
+                'GET /api/finanzas/metodos-pago',
+                'GET /api/finanzas/resumen'
+            ],
+            features: [
+                'CRUD de transacciones',
+                'Cálculo automático de balances',
+                'Filtros por fecha y categoría',
+                'Estadísticas y reportes',
+                'Categorías predefinidas',
+                'Métodos de pago múltiples',
+                'Validaciones de datos',
+                'Formato de moneda MXN'
+            ]
         }
     });
 });
-
-// Resto de rutas de prueba (sin cambios, pero sin restricción de horario)...
-// [Mantener todas las rutas de prueba como estaban]
 
 // ========== MANEJO DE ERRORES MEJORADO ==========
 app.use((err, req, res, next) => {
@@ -707,6 +748,7 @@ app.use('*', (req, res) => {
         path: req.originalUrl,
         method: req.method,
         available_endpoints: [
+            // Endpoints básicos
             'GET /api/test',
             'GET /api/test/historial',
             'GET /api/test/radiografias',
@@ -716,24 +758,86 @@ app.use('*', (req, res) => {
             'GET /api/test/avatars',
             'GET /api/test/static-files',
             'GET /api/system/info',
-            'POST /api/auth/login (SIN restricción)',
-            'GET /api/pacientes (CON restricción)',
-            'POST /api/pacientes/:id/avatar (CON restricción)',
-            'DELETE /api/pacientes/:id/avatar (CON restricción)',
-            'GET /api/citas (CON restricción)',
-            'GET /api/historial/:id (CON restricción)',
-            'POST /api/historiales-clinicos (CON restricción)',
-            'POST /api/historiales (CON restricción)',
-            'POST /api/test-json (SIN restricción)',
-            'ALL /api/debug (SIN restricción)',
+            
+            // Autenticación (SIN restricción)
+            'POST /api/auth/login',
+            'POST /api/auth/logout',
+            'GET /api/auth/verify',
+            
+            // Sistema clínico (CON restricción de horario)
+            'GET /api/pacientes',
+            'POST /api/pacientes',
+            'PUT /api/pacientes/:id',
+            'DELETE /api/pacientes/:id',
+            'POST /api/pacientes/:id/avatar',
+            'DELETE /api/pacientes/:id/avatar',
+            'GET /api/citas',
+            'POST /api/citas',
+            'PUT /api/citas/:id',
+            'DELETE /api/citas/:id',
+            'GET /api/historial/:id',
+            'POST /api/historiales-clinicos',
+            'POST /api/historiales',
+            'GET /api/radiografias',
+            'POST /api/radiografias',
+            'GET /api/consultas',
+            'POST /api/consultas',
+            'GET /api/estudios-laboratorio',
+            'POST /api/estudios-laboratorio',
+            'GET /api/tipos-consulta',
+            'GET /api/consultas-actuales',
+            'GET /api/odontograma',
+            
+            // Panel administrativo (SIN restricción)
+            'GET /api/admin/dashboard',
+            'GET /api/admin/usuarios',
+            'POST /api/admin/usuarios',
+            'PUT /api/admin/usuarios/:id',
+            'DELETE /api/admin/usuarios/:id',
+            'GET /api/admin/inventario',
+            'POST /api/admin/inventario',
+            'PUT /api/admin/inventario/:id',
+            'DELETE /api/admin/inventario/:id',
+            
+            // *** FINANZAS (SIN restricción) ***
+            'GET /api/finanzas/transacciones',
+            'POST /api/finanzas/transacciones',
+            'PUT /api/finanzas/transacciones/:id',
+            'DELETE /api/finanzas/transacciones/:id',
+            'GET /api/finanzas/estadisticas',
+            'GET /api/finanzas/categorias',
+            'GET /api/finanzas/metodos-pago',
+            'GET /api/finanzas/resumen',
+            
+            // Debug y testing (SIN restricción)
+            'POST /api/test-json',
+            'ALL /api/debug',
+            
+            // Archivos estáticos
             'GET /uploads/avatars/:filename',
             'GET /uploads/radiografias/:filename',
-            'GET /uploads/estudios/:filename'
+            'GET /uploads/estudios/:filename (protegido)',
+            'GET /api/uploads/estudios/:filename (protegido)',
+            'GET /api/uploads/radiografias/:filename (protegido)'
         ],
         horario_info: {
             login: 'Disponible 24/7',
-            rutas_protegidas: 'Administradores: 24/7, Doctores: 08:00-23:59',
+            sistema_clinico: 'Administradores: 24/7, Doctores: 08:00-23:59',
+            panel_administrativo: 'Disponible 24/7',
+            finanzas: 'Disponible 24/7',
             rutas_debug: 'Disponibles 24/7'
+        },
+        modulos_disponibles: {
+            auth: '🔐 Autenticación y sesiones',
+            pacientes: '👥 Gestión de pacientes',
+            citas: '📅 Sistema de citas',
+            consultas: '🩺 Consultas médicas',
+            radiografias: '📷 Radiografías',
+            estudios: '🧪 Estudios de laboratorio',
+            historial: '📋 Historial clínico',
+            admin: '⚙️ Panel administrativo',
+            finanzas: '💰 Gestión financiera (NUEVO)',
+            uploads: '📁 Gestión de archivos'
         },
         timestamp: new Date().toISOString()
     });
@@ -750,12 +854,25 @@ const startServer = async () => {
         }
                 
         // Verificar estructura de tablas críticas
-        const criticalTables = ['usuarios', 'pacientes', 'citas', 'estudios_laboratorio'];
+        const criticalTables = [
+            'usuarios', 
+            'pacientes', 
+            'citas', 
+            'estudios_laboratorio',
+            'transacciones_financieras' // *** NUEVA TABLA CRÍTICA ***
+        ];
+        
         for (const table of criticalTables) {
             try {
                 await pool.execute(`SELECT 1 FROM ${table} LIMIT 1`);
+                console.log(`✅ Tabla ${table} verificada`);
             } catch (error) {
                 console.warn(`⚠️ Problema con tabla ${table}:`, error.message);
+                
+                // *** MENSAJE ESPECÍFICO PARA FINANZAS ***
+                if (table === 'transacciones_financieras') {
+                    console.warn('💡 Para crear la tabla de finanzas, ejecuta el script SQL proporcionado');
+                }
             }
         }
         
@@ -771,9 +888,11 @@ const startServer = async () => {
         uploadDirs.forEach(dir => {
             const fullPath = path.join(__dirname, dir);
             if (fs.existsSync(fullPath)) {
+                console.log(`✅ Directorio ${dir} existe`);
             } else {
                 try {
                     fs.mkdirSync(fullPath, { recursive: true });
+                    console.log(`✅ Directorio ${dir} creado`);
                 } catch (error) {
                     console.error(`❌ Error creando directorio ${dir}:`, error.message);
                 }
@@ -785,36 +904,98 @@ const startServer = async () => {
             const fullPath = path.join(__dirname, dir);
             try {
                 fs.accessSync(fullPath, fs.constants.W_OK);
+                console.log(`✅ Permisos de escritura OK en ${dir}`);
             } catch (error) {
+                console.warn(`⚠️ Sin permisos de escritura en ${dir}`);
             }
         });
         
         app.listen(PORT, () => {
-        
+            console.log('🎉 ================================================');
+            console.log(`🚀 SERVIDOR ODONTOSYS INICIADO CORRECTAMENTE`);
+            console.log('🎉 ================================================');
+            console.log(`📡 Puerto: ${PORT}`);
+            console.log(`🌐 URL: http://localhost:${PORT}`);
+            console.log(`🗄️ Base de datos: Conectada`);
+            console.log(`📁 Uploads: Configurados`);
+            console.log('');
+            console.log('📋 MÓDULOS ACTIVOS:');
+            console.log('  ✅ Sistema de autenticación');
+            console.log('  ✅ Gestión de pacientes'); 
+            console.log('  ✅ Sistema de citas');
+            console.log('  ✅ Consultas médicas');
+            console.log('  ✅ Radiografías');
+            console.log('  ✅ Estudios de laboratorio');
+            console.log('  ✅ Historial clínico');
+            console.log('  ✅ Panel administrativo');
+            console.log('  ✅ 💰 GESTIÓN FINANCIERA (NUEVO)');
+            console.log('  ✅ Gestión de archivos');
+            console.log('');
+            console.log('🔗 ENDPOINTS PRINCIPALES:');
+            console.log(`  • API Base: http://localhost:${PORT}/api/test`);
+            console.log(`  • Login: http://localhost:${PORT}/api/auth/login`);
+            console.log(`  • Pacientes: http://localhost:${PORT}/api/pacientes`);
+            console.log(`  • Citas: http://localhost:${PORT}/api/citas`);
+            console.log(`  • Admin: http://localhost:${PORT}/api/admin`);
+            console.log(`  • 💰 Finanzas: http://localhost:${PORT}/api/finanzas`);
+            console.log('');
+            console.log('🕐 HORARIOS DE ACCESO:');
+            console.log('  • Login: 24/7');
+            console.log('  • Sistema clínico: Admins 24/7, Doctores 08:00-23:59');
+            console.log('  • Panel admin: 24/7');
+            console.log('  • Finanzas: 24/7');
+            console.log('');
+            console.log('💡 NUEVAS CARACTERÍSTICAS EN FINANZAS:');
+            console.log('  • CRUD completo de transacciones');
+            console.log('  • Cálculo automático de balances');
+            console.log('  • Filtros por fecha, categoría y tipo');
+            console.log('  • Estadísticas y reportes');
+            console.log('  • Validaciones de datos');
+            console.log('  • Formato de moneda mexicana');
+            console.log('🎉 ================================================');
         });
         
     } catch (error) {
+        console.error('❌ Error crítico al iniciar servidor:', error);
         process.exit(1);
     }
 };
 
 // ========== MANEJO DE SEÑALES ==========
 process.on('SIGINT', async () => {
+    console.log('🛑 Recibida señal SIGINT. Cerrando servidor...');
     try {
         await pool.end();
+        console.log('✅ Conexiones de BD cerradas');
         process.exit(0);
     } catch (error) {
+        console.error('❌ Error cerrando conexiones:', error);
         process.exit(1);
     }
 });
 
 process.on('SIGTERM', async () => {
+    console.log('🛑 Recibida señal SIGTERM. Cerrando servidor...');
     try {
         await pool.end();
+        console.log('✅ Conexiones de BD cerradas');
         process.exit(0);
     } catch (error) {
+        console.error('❌ Error cerrando conexiones:', error);
         process.exit(1);
     }
+});
+
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+    console.error('❌ ERROR NO CAPTURADO:', error);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ PROMESA RECHAZADA NO MANEJADA:', reason);
+    console.error('   En:', promise);
+    process.exit(1);
 });
 
 // Iniciar el servidor

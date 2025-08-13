@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const AuxiliaresDiagnostico = ({ datos: externalData, onChange: externalOnChange, errores = {} }) => {
   const [formData, setFormData] = useState({

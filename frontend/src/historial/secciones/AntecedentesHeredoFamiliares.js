@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const AntecedentesHeredoFamiliares = ({ datos: externalData, onChange: externalOnChange, errores = {} }) => {
   // Estado local por defecto

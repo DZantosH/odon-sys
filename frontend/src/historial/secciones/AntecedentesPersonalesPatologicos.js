@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import '../../css/HistorialFormularios.css'; // Agregar esta línea
 
 const AntecedentesPersonalesPatologicos = ({ datos: externalData, onChange: externalOnChange, errores = {} }) => {
   // Estado local por defecto - usar useMemo para evitar recreación

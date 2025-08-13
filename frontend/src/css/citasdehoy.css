@@ -479,3 +479,54 @@
     color: #e2e8f0;
   }
 }
+
+/* Contenedor principal de la tarjeta de Citas de Hoy */
+.citas-hoy,                /* si usas este nombre */
+.citas-panel .card,        /* o tu wrapper principal dentro de .citas-panel */
+.citas-panel .panel-card,  /* agrega el selector que corresponda a tu card */
+.citas-panel .panel {      /* de respaldo si usas .panel */
+  width: 100% !important;
+  max-width: none !important;    /* <- clave: NO limitar ancho */
+  min-width: 0 !important;
+}
+
+/* El body/lista también debe poder crecer a lo ancho */
+.citas-panel .card-body,
+.citas-panel .panel-content,
+.citas-panel .citas-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Evitamos alturas fijas que dejen huecos en stacking */
+.citas-panel,
+.citas-panel .card,
+.citas-panel .panel,
+.citas-panel .panel-content {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* En móviles/tablets damos un poquito más de aire */
+@media (max-width: 900px){
+  .citas-panel .card,
+  .citas-panel .panel{
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+/* En desktop: la tarjeta crece y solo la lista scrollea si hace falta */
+@media (min-width: 1367px){
+  .citas-list{
+    max-height: 60vh !important;   /* altura cómoda de la lista */
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Si quieres aún más contenido visible en pantallas muy grandes */
+@media (min-width: 1920px){
+  .citas-list{ max-height: 66vh !important; }
+}
