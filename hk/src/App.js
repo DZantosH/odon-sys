@@ -3,18 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './components/Login';
+import TwoFactorLogin from './components/TwoFactorLogin';
+import TwoFactorSetup from './components/TwoFactorSetup';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Finanzas from './pages/Finanzas';
 import Inventario from './pages/Inventario';
-// Importar páginas futuras
-// import Reports from './pages/Reports';
-// import Settings from './pages/Settings';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [authStep, setAuthStep] = useState('login'); // 'login', '2fa', 'setup', 'authenticated'
+  const [pendingUser, setPendingUser] = useState(null);
 
   // Auto-detectar URL base
   const API_URL = window.location.hostname === 'localhost' 
@@ -46,19 +47,22 @@ function App() {
         if (userData.user.rol === 'Administrador') {
           setUser(userData.user);
           setIsAuthenticated(true);
+          setAuthStep('authenticated');
         } else {
-          // Si no es admin, limpiar token y redirigir
           localStorage.removeItem('token');
           setIsAuthenticated(false);
+          setAuthStep('login');
         }
       } else {
         localStorage.removeItem('token');
         setIsAuthenticated(false);
+        setAuthStep('login');
       }
     } catch (error) {
       console.error('Error verificando autenticación:', error);
       localStorage.removeItem('token');
       setIsAuthenticated(false);
+      setAuthStep('login');
     } finally {
       setIsLoading(false);
     }
@@ -82,10 +86,35 @@ function App() {
           throw new Error('Acceso denegado. Se requieren permisos de administrador.');
         }
 
-        localStorage.setItem('token', data.token);
-        setUser(data.user);
-        setIsAuthenticated(true);
-        return { success: true };
+        // Verificar si tiene 2FA configurado
+        const twoFactorResponse = await fetch(`${API_URL}/auth/2fa-status`, {
+          headers: {
+            'Authorization': `Bearer ${data.token}`
+          }
+        });
+
+        if (twoFactorResponse.ok) {
+          const twoFactorData = await twoFactorResponse.json();
+          
+          if (twoFactorData.isFullyConfigured) {
+            // Usuario tiene 2FA configurado, ir a verificación
+            setPendingUser(data.user);
+            setAuthStep('2fa');
+            return { success: true, requiresTwoFactor: true };
+          } else {
+            // Usuario necesita configurar 2FA
+            localStorage.setItem('token', data.token);
+            setUser(data.user);
+            setAuthStep('setup');
+            return { success: true, requiresSetup: true };
+          }
+        } else {
+          // Error al verificar estado 2FA, pero login fue exitoso
+          localStorage.setItem('token', data.token);
+          setUser(data.user);
+          setAuthStep('setup');
+          return { success: true, requiresSetup: true };
+        }
       } else {
         throw new Error(data.message || 'Error en el login');
       }
@@ -98,10 +127,31 @@ function App() {
     }
   };
 
+  const handle2FASuccess = (data) => {
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+    setIsAuthenticated(true);
+    setAuthStep('authenticated');
+    setPendingUser(null);
+  };
+
+  const handle2FASetupComplete = () => {
+    setIsAuthenticated(true);
+    setAuthStep('authenticated');
+  };
+
+  const handleBackToLogin = () => {
+    setPendingUser(null);
+    setAuthStep('login');
+    localStorage.removeItem('token');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
+    setAuthStep('login');
+    setPendingUser(null);
   };
 
   if (isLoading) {
@@ -115,30 +165,55 @@ function App() {
     );
   }
 
-  if (!isAuthenticated) {
+  // Mostrar login inicial
+  if (authStep === 'login') {
     return <Login onLogin={handleLogin} />;
   }
 
-  return (
-    <Router>
-      <Layout user={user} onLogout={handleLogout}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/finanzas" element={<Finanzas />} />
-          <Route path="/inventario" element={<Inventario />} />
+  // Mostrar verificación 2FA
+  if (authStep === '2fa' && pendingUser) {
+    return (
+      <TwoFactorLogin 
+        user={pendingUser}
+        onSuccess={handle2FASuccess}
+        onBack={handleBackToLogin}
+      />
+    );
+  }
 
-          {/* Rutas futuras - comentadas por ahora */}
-          {/* <Route path="/reports" element={<Reports />} /> */}
-          {/* <Route path="/settings" element={<Settings />} /> */}
-          
-          {/* Ruta por defecto */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Layout>
-    </Router>
-  );
+  // Mostrar configuración 2FA
+  if (authStep === 'setup' && user) {
+    return (
+      <TwoFactorSetup 
+        user={user}
+        onComplete={handle2FASetupComplete}
+        onCancel={handleLogout}
+      />
+    );
+  }
+
+  // Usuario autenticado con 2FA
+  if (authStep === 'authenticated' && isAuthenticated) {
+    return (
+      <Router>
+        <Layout user={user} onLogout={handleLogout}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/finanzas" element={<Finanzas />} />
+            <Route path="/inventario" element={<Inventario />} />
+            
+            {/* Ruta por defecto */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Layout>
+      </Router>
+    );
+  }
+
+  // Fallback
+  return <Login onLogin={handleLogin} />;
 }
 
 export default App;

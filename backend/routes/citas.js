@@ -666,13 +666,13 @@ router.post('/verificar-vencidas', verifyToken, verifyAccess, verifyPool, async 
     
     // ✅ CAMBIO: NO MODIFICAR observaciones, solo actualizar estado
     const query = `
-      UPDATE citas 
-      SET estado = 'No_Asistio', 
-          fecha_actualizacion = NOW()
-      WHERE estado IN ('Programada', 'Confirmada')
-      AND CONCAT(fecha_cita, ' ', hora_cita) < ?
-      AND fecha_cita = CURDATE()
-    `;
+  UPDATE citas 
+  SET estado = 'No_Asistio', 
+      fecha_actualizacion = NOW()
+  WHERE estado IN ('Programada', 'Confirmada')
+  AND TIMESTAMP(fecha_cita, hora_cita) < ?
+  AND fecha_cita = CURDATE()
+`;
     
     const fechaLimite = haceMasDeUnaHora.toISOString().slice(0, 19).replace('T', ' ');
     
@@ -802,13 +802,14 @@ const actualizarEstadosAutomaticos = async () => {
     
     // ✅ CAMBIO: NO MODIFICAR observaciones, solo actualizar estado
     const queryNoAsistio = `
-      UPDATE citas 
-      SET estado = 'No_Asistio', 
-          fecha_actualizacion = NOW()
-      WHERE estado IN ('Programada', 'Confirmada')
-      AND fecha_cita = CURDATE()
-      AND CONCAT(fecha_cita, ' ', hora_cita) < ?
-    `;
+  UPDATE citas 
+  SET estado = 'No_Asistio', 
+      fecha_actualizacion = NOW()
+  WHERE estado IN ('Programada', 'Confirmada')
+  AND fecha_cita = CURDATE()
+  AND TIMESTAMP(fecha_cita, hora_cita) < ?
+`;
+
     
     const fechaLimite = hace2Horas.toISOString().slice(0, 19).replace('T', ' ');
     

@@ -2,14 +2,19 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { pool } = require('../config/database'); // Importar pool directamente
+const { pool } = require('../config/database');
 
 const router = express.Router();
 
-// Login
+// 🔧 FUNCIÓN PARA DETECTAR TIPO DE CONTRASEÑA
+const isHashedPassword = (password) => {
+  return password && password.startsWith('$2') && password.length >= 50;
+};
+
+// Login con soporte para contraseñas mixtas
 router.post('/login', [
     body('email').isEmail().withMessage('Email válido requerido'),
-    body('password').isLength({ min: 1 }).withMessage('Contraseña requerida') // Cambié de 6 a 1 para pruebas
+    body('password').isLength({ min: 1 }).withMessage('Contraseña requerida')
 ], async (req, res) => {
     console.log('=== LOGIN REQUEST ===');
     console.log('Body:', req.body);
@@ -26,7 +31,7 @@ router.post('/login', [
         console.log('Email:', email);
         console.log('Password received:', password);
         
-        // Buscar usuario usando mysql2/promise
+        // Buscar usuario
         const query = 'SELECT * FROM usuarios WHERE email = ? AND activo = 1';
         const [results] = await pool.execute(query, [email]);
 
@@ -41,15 +46,42 @@ router.post('/login', [
         console.log('User found:', user.email);
         console.log('Password in DB:', user.password);
         
-        // TEMPORAL: Verificar contraseña sin hash
+        // 🔧 VERIFICACIÓN INTELIGENTE DE CONTRASEÑA
         const dbPassword = user.password ? user.password.toString().trim() : '';
         const receivedPassword = password ? password.toString().trim() : '';
         
-        console.log('Comparing passwords:');
-        console.log('DB Password:', `"${dbPassword}"`);
-        console.log('Received Password:', `"${receivedPassword}"`);
+        let isValidPassword = false;
         
-        const isValidPassword = (dbPassword === receivedPassword);
+        if (isHashedPassword(dbPassword)) {
+            // Contraseña hasheada - usar bcrypt
+            console.log('🔒 Verificando contraseña hasheada con bcrypt...');
+            isValidPassword = await bcrypt.compare(receivedPassword, dbPassword);
+            console.log('Bcrypt comparison result:', isValidPassword);
+        } else {
+            // Contraseña en texto plano - comparación directa
+            console.log('⚠️  Verificando contraseña en texto plano...');
+            console.log('DB Password:', `"${dbPassword}"`);
+            console.log('Received Password:', `"${receivedPassword}"`);
+            isValidPassword = (dbPassword === receivedPassword);
+            console.log('Plain text comparison result:', isValidPassword);
+            
+            // 🚀 AUTO-MIGRACIÓN: Si el login es exitoso, hashear la contraseña
+            if (isValidPassword) {
+                console.log('🔄 Auto-migrando contraseña a bcrypt...');
+                try {
+                    const hashedPassword = await bcrypt.hash(receivedPassword, 10);
+                    await pool.execute(
+                        'UPDATE usuarios SET password = ? WHERE id = ?',
+                        [hashedPassword, user.id]
+                    );
+                    console.log('✅ Contraseña migrada automáticamente');
+                } catch (error) {
+                    console.error('❌ Error auto-migrando contraseña:', error);
+                    // No fallar el login por esto
+                }
+            }
+        }
+        
         console.log('Final password match:', isValidPassword);
         
         if (!isValidPassword) {
@@ -95,7 +127,7 @@ router.post('/login', [
     }
 });
 
-// 🔑 NUEVO: LOGOUT
+// 🔒 LOGOUT
 router.post('/logout', async (req, res) => {
     try {
         const { action = 'manual', timestamp } = req.body;
@@ -114,7 +146,7 @@ router.post('/logout', async (req, res) => {
             }
         }
 
-        console.log(`🔓 Logout ${action} - Usuario ID: ${userId}`);
+        console.log(`🔐 Logout ${action} - Usuario ID: ${userId}`);
 
         res.json({
             success: true,
@@ -161,7 +193,7 @@ router.get('/verify', async (req, res) => {
     }
 });
 
-// 🔑 NUEVO: Verificar sesión (específico para el cierre automático)
+// 🔒 Verificar sesión
 router.get('/verify-session', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -196,7 +228,7 @@ router.get('/verify-session', async (req, res) => {
             success: true,
             message: 'Sesión válida',
             user: usuarioSeguro,
-            tokenExpiry: decoded.exp * 1000 // Convertir a milliseconds
+            tokenExpiry: decoded.exp * 1000
         });
 
     } catch (error) {
@@ -215,7 +247,7 @@ router.get('/verify-session', async (req, res) => {
     }
 });
 
-// 🔑 NUEVO: Extender sesión
+// 🔒 Extender sesión
 router.post('/extend-session', async (req, res) => {
     try {
         const authHeader = req.headers.authorization;
@@ -267,7 +299,7 @@ router.post('/extend-session', async (req, res) => {
     }
 });
 
-// Cambiar contraseña
+// 🔧 CAMBIAR CONTRASEÑA CON BCRYPT
 router.put('/change-password', [
     body('currentPassword').notEmpty().withMessage('Contraseña actual requerida'),
     body('newPassword').isLength({ min: 6 }).withMessage('Nueva contraseña debe tener al menos 6 caracteres')
@@ -295,17 +327,29 @@ router.put('/change-password', [
         }
 
         const user = results[0];
+        const dbPassword = user.password;
         
-        // Verificar contraseña actual (temporal sin hash)
-        const isValidPassword = (currentPassword === user.password);
+        // Verificar contraseña actual (soporte para ambos tipos)
+        let isValidPassword = false;
+        
+        if (isHashedPassword(dbPassword)) {
+            isValidPassword = await bcrypt.compare(currentPassword, dbPassword);
+        } else {
+            isValidPassword = (currentPassword === dbPassword);
+        }
+        
         if (!isValidPassword) {
             return res.status(401).json({ error: 'Contraseña actual incorrecta' });
         }
 
-        // Actualizar contraseña (temporal sin hash)
+        // Hashear nueva contraseña
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        // Actualizar contraseña
         const updateQuery = 'UPDATE usuarios SET password = ? WHERE id = ?';
-        await pool.execute(updateQuery, [newPassword, decoded.id]);
+        await pool.execute(updateQuery, [hashedPassword, decoded.id]);
 
+        console.log(`🔑 Contraseña actualizada para usuario ID: ${decoded.id}`);
         res.json({ message: 'Contraseña actualizada exitosamente' });
 
     } catch (error) {
@@ -314,11 +358,18 @@ router.put('/change-password', [
     }
 });
 
-// 🔑 NUEVO: Endpoint de prueba para el sistema de sesiones
+// 🔒 Endpoint de prueba para el sistema de sesiones
 router.get('/session-test', (req, res) => {
     res.json({
         message: 'Sistema de sesiones funcionando',
         timestamp: new Date().toISOString(),
+        features: {
+            bcrypt_support: true,
+            auto_migration: true,
+            mixed_passwords: true,
+            jwt_tokens: true,
+            session_tracking: true
+        },
         endpoints: {
             login: 'POST /api/auth/login',
             logout: 'POST /api/auth/logout',
@@ -326,13 +377,6 @@ router.get('/session-test', (req, res) => {
             verify_session: 'GET /api/auth/verify-session',
             extend_session: 'POST /api/auth/extend-session',
             change_password: 'PUT /api/auth/change-password'
-        },
-        features: {
-            jwt_tokens: true,
-            session_tracking: true,
-            auto_logout: true,
-            session_extension: true,
-            browser_close_detection: true
         }
     });
 });

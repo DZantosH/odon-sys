@@ -5,6 +5,7 @@ const fs = require('fs');
 const { pool, testConnection } = require('./config/database');
 require('dotenv').config();
 const { verifyToken } = require('./middleware/auth');
+const auth2FARoutes = require('./routes/auth-2fa');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -501,8 +502,8 @@ console.log('  • /api/estudios-laboratorio');
 console.log('  • /api/historial');
 console.log('  • /api/consultas-actuales');
 console.log('  • /api/odontograma');
-console.log('  • /api/admin');
-console.log('  • 💰 /api/finanzas (NUEVO)'); // *** NUEVO LOG ***
+console.log('  • ⚙️ /api/admin (PANEL ADMINISTRATIVO)'); // ← DEBE APARECER
+console.log('  • 💰 /api/finanzas');
 
 // ========== CONFIGURAR RUTAS ==========
 // ⚠️ IMPORTANTE: LOGIN SIN RESTRICCIÓN DE HORARIO
@@ -519,12 +520,23 @@ app.use('/api/estudios-laboratorio', verificarHorarioAcceso, estudiosLaboratorio
 app.use('/api/consultas-actuales', verificarHorarioAcceso, consultasActualesRoutes);
 app.use('/api/odontograma', verificarHorarioAcceso, odontogramaRoutes);
 app.use('/api/historial', historialRoutes);
+app.use('/api/auth', auth2FARoutes);
+app.use('/api/auth', require('./routes/auth-2fa'));
 
 // ✅ RUTAS DEL PANEL ADMINISTRATIVO (SIN restricción de horario)
 app.use('/api/admin', adminRoutes);
 
 // *** 💰 NUEVA RUTA: FINANZAS (SIN restricción de horario) ***
 app.use('/api/finanzas', finanzasRoutes);
+
+app.get('/api/admin-test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Endpoint de prueba admin funcionando',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // ========== ENDPOINTS DE DEBUG SIN RESTRICCIÓN ==========
 app.all('/api/debug', (req, res) => {

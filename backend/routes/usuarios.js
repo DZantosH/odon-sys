@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { pool } = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 
 // Obtener todos los usuarios

@@ -4,15 +4,16 @@ import {
   Users as UsersIcon,
   Plus,
   Search,
-  Filter,
   Edit,
   Trash2,
-  Eye,
   UserCheck,
   UserX,
   Shield,
   Stethoscope,
-  Clipboard
+  Clipboard,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
 
 const Users = () => {
@@ -24,14 +25,17 @@ const Users = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    rol: 'Secretaria',
-    password: '',
-    activo: true
-  });
+  const [notification, setNotification] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Formulario
+  const [formNombre, setFormNombre] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formTelefono, setFormTelefono] = useState('');
+  const [formRol, setFormRol] = useState('Secretaria');
+  const [formPassword, setFormPassword] = useState('');
+  const [formActivo, setFormActivo] = useState(true);
+
   const [stats, setStats] = useState({
     total: 0,
     administradores: 0,
@@ -54,29 +58,55 @@ const Users = () => {
     filterUsers();
   }, [users, searchTerm, selectedRole, selectedStatus]);
 
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 5000);
+  };
+
   const fetchUsers = async () => {
     try {
+      setLoading(true);
+      console.log('🔍 Cargando usuarios...');
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        showNotification('No hay token de autenticación', 'error');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(`${API_URL}/admin/users`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Usuarios cargados:', data.length);
         setUsers(data);
         calculateStats(data);
+        showNotification(`${data.length} usuarios cargados correctamente`);
+      } else {
+        const errorData = await response.json().catch(() => ({ 
+          message: `Error HTTP ${response.status}` 
+        }));
+        console.error('❌ Error en response:', errorData);
+        showNotification(errorData.message || 'Error al cargar usuarios', 'error');
       }
     } catch (error) {
-      console.error('Error al cargar usuarios:', error);
+      console.error('❌ Error al cargar usuarios:', error);
+      showNotification(`Error de conexión: ${error.message}`, 'error');
     } finally {
       setLoading(false);
     }
   };
 
   const calculateStats = (usersData) => {
-    const stats = {
+    const newStats = {
       total: usersData.length,
       administradores: usersData.filter(u => u.rol === 'Administrador').length,
       doctores: usersData.filter(u => u.rol === 'Doctor').length,
@@ -84,27 +114,24 @@ const Users = () => {
       activos: usersData.filter(u => u.activo).length,
       inactivos: usersData.filter(u => !u.activo).length
     };
-    setStats(stats);
+    setStats(newStats);
   };
 
   const filterUsers = () => {
     let filtered = users;
 
-    // Filtro por búsqueda
     if (searchTerm) {
       filtered = filtered.filter(user =>
         user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.telefono.includes(searchTerm)
+        (user.telefono && user.telefono.includes(searchTerm))
       );
     }
 
-    // Filtro por rol
     if (selectedRole) {
       filtered = filtered.filter(user => user.rol === selectedRole);
     }
 
-    // Filtro por estado
     if (selectedStatus !== '') {
       filtered = filtered.filter(user => 
         selectedStatus === 'activo' ? user.activo : !user.activo
@@ -114,112 +141,202 @@ const Users = () => {
     setFilteredUsers(filtered);
   };
 
+  const clearForm = () => {
+    setFormNombre('');
+    setFormEmail('');
+    setFormTelefono('');
+    setFormRol('Secretaria');
+    setFormPassword('');
+    setFormActivo(true);
+  };
+
+  const openModal = (user = null) => {
+    console.log('🎬 Abriendo modal');
+    
+    if (user) {
+      setEditingUser(user);
+      setFormNombre(`${user.nombre} ${user.apellido_completo || ''}`.trim());
+      setFormEmail(user.email);
+      setFormTelefono(user.telefono || '');
+      setFormRol(user.rol);
+      setFormPassword('');
+      setFormActivo(user.activo);
+    } else {
+      setEditingUser(null);
+      clearForm();
+    }
+    setShowModal(true);
+    
+    // Prevenir scroll del body
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    console.log('❌ Cerrando modal');
+    setShowModal(false);
+    setEditingUser(null);
+    setSubmitting(false);
+    clearForm();
+    
+    // Restaurar scroll del body
+    document.body.style.overflow = 'auto';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('📤 Enviando formulario...');
+    
+    // Validaciones
+    if (!formNombre.trim()) {
+      showNotification('El nombre es obligatorio', 'error');
+      return;
+    }
+    
+    if (!formEmail.trim()) {
+      showNotification('El email es obligatorio', 'error');
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formEmail)) {
+      showNotification('El formato del email no es válido', 'error');
+      return;
+    }
+    
+    if (!editingUser && !formPassword.trim()) {
+      showNotification('La contraseña es obligatoria', 'error');
+      return;
+    }
+    
+    if (!formRol) {
+      showNotification('Debe seleccionar un rol', 'error');
+      return;
+    }
+    
     try {
+      setSubmitting(true);
+      
       const token = localStorage.getItem('token');
+      if (!token) {
+        showNotification('No hay token de autenticación', 'error');
+        return;
+      }
+      
       const url = editingUser 
         ? `${API_URL}/admin/users/${editingUser.id}`
         : `${API_URL}/admin/users`;
       
       const method = editingUser ? 'PUT' : 'POST';
       
+      const submitData = {
+        nombre: formNombre,
+        email: formEmail,
+        telefono: formTelefono || null,
+        rol: formRol,
+        activo: formActivo
+      };
+      
+      // Solo incluir password si no es edición o si se proporcionó
+      if (!editingUser || (editingUser && formPassword.trim())) {
+        submitData.password = formPassword;
+      }
+      
+      console.log('🚀 Enviando:', method, url, submitData);
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
 
+      console.log('📡 Response status:', response.status);
+      
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Resultado:', result);
+        
         await fetchUsers();
         closeModal();
+        showNotification(
+          editingUser ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente',
+          'success'
+        );
       } else {
-        const error = await response.json();
-        alert(error.message || 'Error al guardar usuario');
+        const error = await response.json().catch(() => ({ 
+          message: `Error HTTP ${response.status}` 
+        }));
+        console.error('❌ Error en response:', error);
+        showNotification(error.message || 'Error al guardar usuario', 'error');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al guardar usuario');
+      console.error('❌ Error:', error);
+      showNotification(`Error de conexión: ${error.message}`, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
       const token = localStorage.getItem('token');
+      
       const response = await fetch(`${API_URL}/admin/users/${userId}/toggle-status`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (response.ok) {
+        const result = await response.json();
         await fetchUsers();
+        showNotification(result.message, 'success');
+      } else {
+        const error = await response.json().catch(() => ({ 
+          message: `Error HTTP ${response.status}` 
+        }));
+        showNotification(error.message || 'Error al cambiar estado', 'error');
       }
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
+      console.error('❌ Error al cambiar estado:', error);
+      showNotification(`Error de conexión: ${error.message}`, 'error');
     }
   };
 
-  const deleteUser = async (userId) => {
-    if (!window.confirm('¿Está seguro de eliminar este usuario?')) return;
+  const deleteUser = async (userId, userEmail) => {
+    if (!window.confirm(`¿Está seguro de eliminar el usuario ${userEmail}?`)) return;
     
     try {
       const token = localStorage.getItem('token');
+      
       const response = await fetch(`${API_URL}/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (response.ok) {
+        const result = await response.json();
         await fetchUsers();
+        showNotification(result.message, 'success');
+      } else {
+        const error = await response.json().catch(() => ({ 
+          message: `Error HTTP ${response.status}` 
+        }));
+        showNotification(error.message || 'Error al eliminar usuario', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar usuario:', error);
+      console.error('❌ Error al eliminar usuario:', error);
+      showNotification(`Error de conexión: ${error.message}`, 'error');
     }
-  };
-
-  const openModal = (user = null) => {
-    if (user) {
-      setEditingUser(user);
-      setFormData({
-        nombre: user.nombre,
-        email: user.email,
-        telefono: user.telefono || '',
-        rol: user.rol,
-        password: '',
-        activo: user.activo
-      });
-    } else {
-      setEditingUser(null);
-      setFormData({
-        nombre: '',
-        email: '',
-        telefono: '',
-        rol: 'Secretaria',
-        password: '',
-        activo: true
-      });
-    }
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingUser(null);
-    setFormData({
-      nombre: '',
-      email: '',
-      telefono: '',
-      rol: 'Secretaria',
-      password: '',
-      activo: true
-    });
   };
 
   const getRoleIcon = (rol) => {
@@ -244,12 +361,31 @@ const Users = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Cargando usuarios...</span>
       </div>
     );
   }
 
   return (
     <div className="p-6">
+      {/* Notificaciones */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border-l-4 ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-400 text-green-800' 
+            : notification.type === 'error'
+            ? 'bg-red-50 border-red-400 text-red-800'
+            : 'bg-blue-50 border-blue-400 text-blue-800'
+        }`}>
+          <div className="flex items-center">
+            {notification.type === 'success' && <CheckCircle className="w-5 h-5 mr-2" />}
+            {notification.type === 'error' && <XCircle className="w-5 h-5 mr-2" />}
+            {notification.type === 'info' && <AlertCircle className="w-5 h-5 mr-2" />}
+            <span>{notification.message}</span>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -263,7 +399,9 @@ const Users = () => {
         </div>
         <button
           onClick={() => openModal()}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+          disabled={submitting}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+          style={{ cursor: 'pointer' }}
         >
           <Plus className="w-4 h-4" />
           Nuevo Usuario
@@ -402,7 +540,7 @@ const Users = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {user.nombre}
+                        {user.nombre} {user.apellido_completo}
                       </div>
                       <div className="text-sm text-gray-500">
                         {user.email}
@@ -437,6 +575,7 @@ const Users = () => {
                         onClick={() => openModal(user)}
                         className="text-blue-600 hover:text-blue-900 p-1"
                         title="Editar usuario"
+                        style={{ cursor: 'pointer' }}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -444,13 +583,15 @@ const Users = () => {
                         onClick={() => toggleUserStatus(user.id, user.activo)}
                         className={`p-1 ${user.activo ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
                         title={user.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                        style={{ cursor: 'pointer' }}
                       >
                         {user.activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
                       <button
-                        onClick={() => deleteUser(user.id)}
+                        onClick={() => deleteUser(user.id, user.email)}
                         className="text-red-600 hover:text-red-900 p-1"
                         title="Eliminar usuario"
+                        style={{ cursor: 'pointer' }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -465,126 +606,170 @@ const Users = () => {
             <div className="text-center py-12">
               <UsersIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">No se encontraron usuarios</p>
+              {(searchTerm || selectedRole || selectedStatus) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedRole('');
+                    setSelectedStatus('');
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm mt-2"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Limpiar filtros
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal para crear/editar usuario */}
+      {/* MODAL SUPER SIMPLE - SIN COMPLICACIONES */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" onClick={closeModal}>
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+        <div className="fixed inset-0 z-50 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-medium text-gray-900">
+                {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                style={{ cursor: 'pointer' }}
+              >
+                ×
+              </button>
             </div>
 
-            <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <form onSubmit={handleSubmit}>
-                <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
-                  </h3>
-                </div>
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              {/* Nombre */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre completo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formNombre}
+                  onChange={(e) => setFormNombre(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej: Juan Pérez García"
+                  disabled={submitting}
+                />
+              </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nombre completo *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.nombre}
-                      onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="usuario@ejemplo.com"
+                  disabled={submitting}
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={formTelefono}
+                  onChange={(e) => setFormTelefono(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="5512345678"
+                  disabled={submitting}
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Teléfono
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.telefono}
-                      onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+              {/* Rol */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rol *
+                </label>
+                <select
+                  required
+                  value={formRol}
+                  onChange={(e) => setFormRol(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={submitting}
+                >
+                  <option value="">Seleccionar rol...</option>
+                  <option value="Secretaria">Secretaria</option>
+                  <option value="Doctor">Doctor</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Rol *
-                    </label>
-                    <select
-                      required
-                      value={formData.rol}
-                      onChange={(e) => setFormData({...formData, rol: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="Secretaria">Secretaria</option>
-                      <option value="Doctor">Doctor</option>
-                      <option value="Administrador">Administrador</option>
-                    </select>
-                  </div>
+              {/* Contraseña */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {editingUser ? 'Nueva contraseña (opcional)' : 'Contraseña *'}
+                </label>
+                <input
+                  type="password"
+                  required={!editingUser}
+                  value={formPassword}
+                  onChange={(e) => setFormPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder={editingUser ? 'Dejar vacío para mantener' : 'Mínimo 6 caracteres'}
+                  minLength={editingUser ? 0 : 6}
+                  disabled={submitting}
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {editingUser ? 'Nueva contraseña (dejar vacío para mantener)' : 'Contraseña *'}
-                    </label>
-                    <input
-                      type="password"
-                      required={!editingUser}
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
+              {/* Usuario activo */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="activo"
+                  checked={formActivo}
+                  onChange={(e) => setFormActivo(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  disabled={submitting}
+                />
+                <label htmlFor="activo" className="ml-2 block text-sm text-gray-900 cursor-pointer">
+                  Usuario activo
+                </label>
+              </div>
 
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="activo"
-                      checked={formData.activo}
-                      onChange={(e) => setFormData({...formData, activo: e.target.checked})}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="activo" className="ml-2 block text-sm text-gray-900">
-                      Usuario activo
-                    </label>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-                  >
-                    {editingUser ? 'Actualizar' : 'Crear Usuario'}
-                  </button>
-                </div>
-              </form>
-            </div>
+              {/* Botones */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      {editingUser ? 'Actualizando...' : 'Creando...'}
+                    </>
+                  ) : (
+                    editingUser ? 'Actualizar Usuario' : 'Crear Usuario'
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
